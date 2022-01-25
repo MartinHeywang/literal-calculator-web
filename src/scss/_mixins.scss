@@ -1,0 +1,5 @@
+@mixin underline($color: var(--clr-primary-700), $thickness: 2px) {
+    text-decoration: underline;
+    text-decoration-color: $color;
+    text-decoration-thickness: $thickness;
+}

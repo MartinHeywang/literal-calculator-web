@@ -1,0 +1,82 @@
+@use "breakpoints" as bp;
+
+body {
+    background-color: var(--clr-neutral-100);
+    color: var(--clr-neutral-900);
+
+    font-family: "Source Sans Pro", sans-serif;
+}
+
+::selection {
+    background-color: var(--clr-primary-100);
+}
+
+.title {
+    text-decoration: underline;
+    text-decoration-color: var(--clr-primary-700);
+    text-decoration-thickness: 2px;
+}
+
+button {
+    flex-basis: 100%;
+
+    padding: 0.3em 0.5em;
+    margin-block-start: 2em;
+    border: 2px solid;
+    border-color: var(--clr-primary-700);
+    background-color: var(--clr-primary-700);
+
+    font: inherit;
+    text-align: center;
+    color: var(--clr-neutral-100);
+
+    $duration: 125ms;
+    transition: 
+        background-color $duration linear,
+        color $duration linear,
+    ;
+}
+
+button:hover,
+button:focus-visible {
+    cursor: pointer;
+
+    outline: 2px solid var(--clr-primary-300);
+    outline-offset: 2px;
+    z-index: 1;
+}
+
+.function__def {
+    font-family: "Source Code Pro", monospace;
+
+    user-select: none;
+}
+
+.function__def-editable {
+    padding: .2em;
+    margin: 0 .1em;
+    background-color: var(--clr-neutral-300);
+    border: 2px solid;
+    border-color: var(--clr-neutral-300);
+    border-radius: .3em;
+
+    color: var(--clr-primary-700);
+}
+
+.function__def-editable:focus {
+    border-color: currentColor;
+    outline: none;
+}
+
+.result__zone {
+    padding: 1em;
+    border: 1px solid var(--clr-neutral-300);
+}
+
+.result__zone--complete {
+    border-color: var(--clr-primary-700);
+}
+
+.result__solutions {
+    font-weight: 1.2rem;
+}

@@ -1,0 +1,50 @@
+@use "mixins" as m;
+
+.button-group {
+    display: flex;
+
+    margin-block-start: 0.5em;
+    margin-block-end: 1em;
+    border: 1px solid var(--clr-neutral-900);
+}
+
+.button-group-option {
+    flex-basis: 100%;
+
+    margin-block-start: 0;
+    padding: 0.3em 0.5em;
+    border: none;
+    background-color: transparent;
+
+    font: inherit;
+    text-align: center;
+    color: inherit;
+
+    $duration: 125ms;
+    transition: 
+        background-color $duration linear,
+        color $duration linear,
+    ;
+}
+
+.button-group-option--selected {
+    position: relative;
+
+    background-color: var(--clr-neutral-900);
+    color: var(--clr-neutral-100);
+}
+
+.button-group-option:hover {
+    outline: none;
+}
+
+.button-group-option:not(.button-group-option--selected):hover {
+    background-color: var(--clr-neutral-300);
+    cursor: pointer;
+}
+
+.button-group-option:focus-visible {
+    outline: 2px solid var(--clr-primary-700);
+    outline-offset: 0;
+    z-index: 1;
+}
