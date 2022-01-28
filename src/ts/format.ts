@@ -55,6 +55,14 @@ export function list(expression: string) {
             result.push(char);
             continue;
         } else if (isLetter(char)) {
+            // special case, when a negative letter (e.g. "-x") is at the beginning of the string
+            if((i === 1 && (cache === "-" || cache === "+"))) {
+                cache += char;
+                pushCache();
+                cache = "";
+                continue;
+            }
+
             pushCache();
             cache = "";
             result.push(char);
@@ -103,7 +111,7 @@ function addImplicitMultiplications(list: string[]) {
         // - when the previous symbol is NOT an operator, and the current symbol an opening parenthesis
         // - when the previous symbol is a digit, and the current symbol a letter
         // - when both the previous and the current symbol are letters
-        if (
+        if (previous && 
             (!isOperator(previous) && isParenthesis(current, { includeClosings: false })) ||
             (isDigit(previous) && isLetter(current)) ||
             (isLetter(previous) && isLetter(current))

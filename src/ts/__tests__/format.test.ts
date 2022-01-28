@@ -41,6 +41,22 @@ describe("list", () => {
 
         expect(output).toStrictEqual(["48", "^", "2", "+", "5", "(", "53", "x", "+", "2", ")"])
     })
+
+    test("negative letter at the beginning", () => {
+        const input = "-x";
+
+        const output = list(input);
+
+        expect(output).toStrictEqual(["-x"]);
+    })
+
+    test("minus sign before a parenthesis (beginning)", () => {
+        const input = "- (3x + 2)";
+
+        const output = list(input);
+
+        expect(output).toStrictEqual(["-", "(", "3", "x", "+", "2", ")"]);
+    })
 })
 
 describe("arrange", () => {
