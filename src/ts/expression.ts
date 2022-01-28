@@ -1,4 +1,5 @@
 import { minify, list, arrange } from "./format";
+import { setFactor } from "./multiplier";
 import { isLetter } from "./terms/letter";
 import { NumberData } from "./terms/number";
 import { getOperator, isOperator, operators } from "./terms/operator";
@@ -122,8 +123,12 @@ export function isKnown(list: Expression): boolean {
 export function handlePowers(expression: Expression) {
     const result: Expression = [];
 
+    const popLastResult = () => result.pop();
+
     for (let i = 0; i < expression.length; i++) {
         const symbol = expression[i];
+
+        const skipNextIteration = () => i++;
 
         // recursively search through parentheses as well
         if (Array.isArray(symbol)) {
@@ -143,49 +148,47 @@ export function handlePowers(expression: Expression) {
         const isRaisedKnown = isKnown([raised]);
         const isPowerKnown = isKnown([power]);
 
-        // power is not known, just isolate
+        // power is unknown, just isolate
+        // 2^n --> [2^n]
+        // x^n --> [x^n]
         if (!isPowerKnown) {
-            const block = [];
-            block.push(raised);
-            block.push(symbol);
-            block.push(power);
-            Object.freeze(block);
-
-            result.pop();
-            i++;
-            result.push(block);
+            popLastResult();
+            result.push(frozenExpression([raised, symbol, power]));
+            skipNextIteration();
             continue;
         }
 
-        // raised is not known (but power is)
+        // raised is unknown (but power is)
+        // a^2
+        // (48a + 5)^5
+
         if (!isRaisedKnown) {
             const powerValue = evaluate([power]);
 
+            // a^2 --> updated multiplier
             if (!Array.isArray(raised)) {
                 // change the value of the multiplier
-                (raised as Term<"number">).data.multiplier[raised.text] = powerValue;
-                i++; // skip the power symbol, already treated
+                setFactor((raised as Term<"number">).data.multiplier, raised.text, powerValue);
+                skipNextIteration();
                 continue;
             }
 
             // raised it too complex, isolate
-            const block = [];
-            block.push(raised);
-            block.push(symbol);
-            block.push(power);
-            Object.freeze(block);
+            // (48a + 5)^5 --> [(48a + 5)^5]
 
-            result.pop();
-            i++;
-            result.push(block);
+            popLastResult();
+            result.push(frozenExpression([raised, symbol, power]));
+            skipNextIteration();
             continue;
         }
 
         // both power and raised are known
+        // 2^2 --> 4
+        // 3^2 --> 9
 
-        result.pop(); // remove the term one front the stack
+        popLastResult();
         result.push(createTerm(evaluate([raised, symbol, power]).toString()));
-        i++; // skip the next element
+        skipNextIteration();
     }
 
     return result;
@@ -206,32 +209,18 @@ export function evaluate(list: Expression): number {
         else return evaluate(list[0]);
     }
 
-    const firstOperator = (priority: number) => {
-        for (let i = 0; i < list.length; i++) {
-            const symbol = list[i];
-
-            if (Array.isArray(symbol)) continue;
-
-            if (isOperator(symbol.text, { priority })) return i;
-        }
-
-        return null;
-    };
+    const findOperators = () => ({
+        2: findOperator(list, { priority: 2 }),
+        1: findOperator(list, { priority: 1 }),
+        0: findOperator(list, { priority: 0 }),
+    });
 
     // first operators, by priority
-    let firstOperators = {
-        2: firstOperator(2),
-        1: firstOperator(1),
-        0: firstOperator(0),
-    };
+    let firstOperators = findOperators();
 
-    // refresh the first operators
-    const computeFirstOperators = () => {
-        firstOperators = {
-            2: firstOperator(2),
-            1: firstOperator(1),
-            0: firstOperator(0),
-        };
+    const operatorsLeft = () => {
+        firstOperators = findOperators();
+        return firstOperators[2] !== null || firstOperators[1] !== null || firstOperators[0] !== null;
     };
 
     // handles an operation and mutates the list
@@ -244,19 +233,18 @@ export function evaluate(list: Expression): number {
         const operator = list[index] as Term<"operator">;
         const right = list[rightIndex] ?? null;
 
-        if (!left || !right) throw new Error("Misconstrued expression. Couldn't evaluate.");
+        // an operator needs a value before and after it
+        if (!left || !right) throw new Error("Misconstructed expression. Couldn't evaluate.");
 
         const leftValue = evaluate([left]);
         const rightValue = evaluate([right]);
 
         const result = getOperator(operator.text)!.operation(leftValue, rightValue);
-        list[operatorIndex] = createTerm(result.toString());
-        list.splice(leftIndex, 1);
-        list.splice(rightIndex - 1, 1); // -1 because an element as already been removed.
+        list[leftIndex] = createTerm(result.toString());
+        list.splice(operatorIndex, 2);
     };
 
-    // as long as we got operators to proceed:
-    while (firstOperators[2] !== null || firstOperators[1] !== null || firstOperators[0] !== null) {
+    while (operatorsLeft()) {
         if (firstOperators[2]) {
             handleOperatorAt(firstOperators[2]);
         } else if (firstOperators[1]) {
@@ -264,9 +252,53 @@ export function evaluate(list: Expression): number {
         } else if (firstOperators[0]) {
             handleOperatorAt(firstOperators[0]);
         }
-
-        computeFirstOperators();
     }
 
     return (list[0] as Term<"number">).data.value;
+}
+
+/**
+ * Freezes an expression so it can't be changed anymore.
+ * Useful to tell some operations not to dig to deep in this expression (parentheses)
+ * 
+ * @param terms the expression to be frozen
+ * @returns the frozen expression
+ */
+export function frozenExpression(terms: Expression): Expression {
+    // here we are mismatching a mutable Expression with a readonly Expression. (return type annotation)
+
+    // at runtime the array WILL be readonly
+    // but to TypeScript's eyes it will be mutable
+
+    // because of a TypeScript bug I prefer for now to do it like that.
+    // consider this code :
+
+    // Array.isArray(term) return;
+    // this guard clause is preventing 'term' to be an array
+    // now if the type of term "readonly Array", TypeScript would still be in doubt
+
+    // "Array.isArray" is the way I check if a term is an array or not.
+    // and adding casts everywhere is annoying
+
+    // @ts-expect-error --> ts(4104)
+    return Object.freeze(terms);
+}
+
+/**
+ * Finds the first operator in the expression that matches the criteria.
+ *
+ * @param expression the expression to search through
+ * @param options the criteria if needed
+ * @returns the index of the first operator, or null if none were found.
+ */
+export function findOperator(expression: Expression, options?: { priority: number }) {
+    for (let i = 0; i < expression.length; i++) {
+        const term = expression[i];
+
+        if (Array.isArray(term)) continue;
+
+        if (isOperator(term.text, { priority: options?.priority })) return i;
+    }
+
+    return null;
 }

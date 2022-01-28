@@ -16,6 +16,10 @@ export function decrementFactor(multiplier: Multiplier, factor: string, value = 
     incrementFactor(multiplier, factor, value * -1);
 }
 
+export function setFactor(multiplier: Multiplier, factor: string, value: number) {
+    multiplier[factor] = value;
+}
+
 export function getMultiplierValue(multiplier: Multiplier, factor: string) {
     return multiplier[factor] ?? 0;
 }

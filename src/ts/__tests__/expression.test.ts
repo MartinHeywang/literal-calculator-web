@@ -1,4 +1,4 @@
-import { createExpression, evaluate, handlePowers, isKnown } from "../expression";
+import { createExpression, evaluate, findOperator, handlePowers, isKnown } from "../expression";
 import { Term } from "../terms/terms";
 
 describe("is known", () => {
@@ -122,3 +122,39 @@ describe("evaluate", () => {
         expect(evaluate(input)).toBe(4571);
     });
 });
+
+describe("find operator", () => {
+    test("w/o criteria", () => {
+        const input = createExpression("2x + 3");
+
+        const output = findOperator(input);
+
+        // remember the implicit multiplication between "2" and "x"
+        expect(output).toBe(1);
+    })
+
+    test("priority 1", () => {
+        const input = createExpression("2 + 3x");
+
+        const output = findOperator(input, {priority: 1});
+
+        // remember the implicit multiplication between "2" and "x"
+        expect(output).toBe(3);
+    })
+    test("priority 2", () => {
+        const input = createExpression("2 + 3x^2");
+
+        const output = findOperator(input, {priority: 2});
+
+        // remember the implicit multiplication between "2" and "x"
+        expect(output).toBe(5);
+    })
+
+    test("null", () => {
+        const input = createExpression("666");
+
+        const output = findOperator(input);
+
+        expect(output).toBeNull();
+    })
+})
