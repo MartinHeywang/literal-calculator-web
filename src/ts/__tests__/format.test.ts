@@ -60,43 +60,71 @@ describe("list", () => {
 })
 
 describe("arrange", () => {
-    test("implicit multiplication, simple", () => {
-        const input = ["2", "x"];
-
-        const output = arrange(input);
-
-        expect(output).toStrictEqual(["2", "*", "x"]);
+    describe("implicit multiplication", () => {
+        test("simple number", () => {
+            const input = ["2", "x"];
+    
+            const output = arrange(input);
+    
+            expect(output).toStrictEqual(["2", "*", "x"]);
+        })
+    
+        test("complex expression", () => {
+            const input = ["5", "(", "3", "x", "+", "5", ")"];
+    
+            const output = arrange(input);
+    
+            expect(output).toStrictEqual(["5", "*", "(", "3", "*", "x", "+", "5", ")"]);
+        })
+    })
+    
+    describe("remove parentheses", () => {
+        test("basic example", () => {
+            const input = ["(", ")", "5"];
+    
+            const output = arrange(input);
+    
+            expect(output).toStrictEqual(["5"]);
+        })
+    
+        test("complex expression", () => {
+            const input = ["(", ")", "5", "*", "(", "3", "*", "x", "+", "5", "(", ")", ")"];
+    
+            const output = arrange(input);
+    
+            expect(output).toStrictEqual(["5", "*", "(", "3", "*", "x", "+", "5", ")"]);
+        })
     })
 
-    test("implicit multiplication, complex", () => {
-        const input = ["5", "(", "3", "x", "+", "5", ")"];
+    describe("sign at the beginning", () => {
 
-        const output = arrange(input);
+        test("before a number", () => {
+            const input = ["-", "5", "*", "3"];
 
-        expect(output).toStrictEqual(["5", "*", "(", "3", "*", "x", "+", "5", ")"]);
+            const output = arrange(input);
+
+            expect(output).toStrictEqual(["-5", "*", "3"]);
+        })
+        
+        test("before a parenthesis", () => {
+            const input = ["-", "(", "48", "*", "a", "+", "5", ")"]
+
+            const output = arrange(input);
+
+            expect(output).toStrictEqual(["0", "-", "(", "48", "*", "a", "+", "5", ")"]);
+        })
     })
+    
+    describe("mix", () => {
+        test("complex expression", () => {
+            const input = ["-", "(", ")", "5", "(", ")", "(", "3", "x", "+", "5", "(", ")", ")", "(", ")"];
+    
+            const output = arrange(input);
 
-    test("empty parentheses, simple", () => {
-        const input = ["(", ")", "5"];
-
-        const output = arrange(input);
-
-        expect(output).toStrictEqual(["5"]);
-    })
-
-    test("empty parentheses, simple", () => {
-        const input = ["(", ")", "5", "*", "(", "3", "*", "x", "+", "5", "(", ")", ")"];
-
-        const output = arrange(input);
-
-        expect(output).toStrictEqual(["5", "*", "(", "3", "*", "x", "+", "5", ")"]);
-    })
-
-    test("both, complex", () => {
-        const input = ["(", ")", "5", "(", ")", "(", "3", "x", "+", "5", "(", ")", ")", "(", ")"];
-
-        const output = arrange(input);
-
-        expect(output).toStrictEqual(["5", "*", "(", "3", "*", "x", "+", "5", ")"]);
+            console.log(input)
+            console.log(output)
+    
+            expect(output).toStrictEqual(["-5", "*", "(", "3", "*", "x", "+", "5", ")"]);
+        })
     })
 })

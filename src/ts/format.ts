@@ -1,5 +1,6 @@
 import { isDigit } from "./terms/digit";
 import { isLetter } from "./terms/letter";
+import { isNumber } from "./terms/number";
 import { isOperator } from "./terms/operator";
 import { isParenthesis } from "./terms/parenthesis";
 
@@ -56,7 +57,7 @@ export function list(expression: string) {
             continue;
         } else if (isLetter(char)) {
             // special case, when a negative letter (e.g. "-x") is at the beginning of the string
-            if((i === 1 && (cache === "-" || cache === "+"))) {
+            if (i === 1 && (cache === "-" || cache === "+")) {
                 cache += char;
                 pushCache();
                 cache = "";
@@ -88,6 +89,7 @@ export function arrange(list: string[]) {
     let result = list;
     result = removeEmptyParentheses(result);
     result = addImplicitMultiplications(result);
+    result = treatNegativeParentheses(result);
 
     return result;
 }
@@ -111,8 +113,8 @@ function addImplicitMultiplications(list: string[]) {
         // - when the previous symbol is NOT an operator, and the current symbol an opening parenthesis
         // - when the previous symbol is a digit, and the current symbol a letter
         // - when both the previous and the current symbol are letters
-        if (previous && 
-            (!isOperator(previous) && isParenthesis(current, { includeClosings: false })) ||
+        if (
+            (previous && !isOperator(previous) && isParenthesis(current, { includeClosings: false })) ||
             (isDigit(previous) && isLetter(current)) ||
             (isLetter(previous) && isLetter(current))
         ) {
@@ -145,6 +147,35 @@ function removeEmptyParentheses(list: string[]) {
         ) {
             result.pop();
         } else result.push(symbol);
+    }
+
+    return result;
+}
+
+/**
+ * Adds a zero at the beginning of the expression if needed to avoid having
+ * a plus or a minus at the beginning that would lead to an order check error.
+ *
+ * @param list the list to be treated
+ * @returns the new, edited list
+ */
+function treatNegativeParentheses(list: string[]) {
+    const result = Array.from(list);
+    if (list.length < 2) return result;
+
+    condition: if (isOperator(result[0], { priority: 0 })) {
+        // we can't add a minus sign on a parenthesis, so we prefer to insert a "0" at the beginning
+        if (isParenthesis(result[1])) {
+            result.unshift("0");
+            break condition;
+        }
+
+        // on a number, we do! We're just adding this minus sign to the symbol
+        if (isNumber(result[1])) {
+            result[1] = `${result[0]}${result[1]}`;
+            result.splice(0, 1);
+            break condition;
+        }
     }
 
     return result;
