@@ -1,4 +1,4 @@
-import { parseExpression } from "./parser";
+import { createExpression } from "./expression";
 
 // "e" is a shorthand for elements
 const e = {
@@ -13,7 +13,7 @@ e.compute.addEventListener("click", () => {
     const textDef = e.def.function.textContent || "";
     // const abscissa = parseFloat(e.def.a.textContent || "1");
 
-    const def = parseExpression(textDef);
+    const def = createExpression(textDef);
 
     console.log(def);
 })
