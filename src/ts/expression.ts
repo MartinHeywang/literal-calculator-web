@@ -120,6 +120,26 @@ export function isKnown(list: Expression): boolean {
     });
 }
 
+export function handleKnown(expression: Expression) {
+    const result = [];
+
+    for (let i = 0; i < expression.length; i++) {
+        const current = expression[i];
+
+        if (Array.isArray(current)) {
+            try {
+                result.push(evaluate(current));
+            } catch {
+                // couldn't evaluate, dig deeper
+                result.push(handleKnown(current));
+            }
+            continue;
+        }
+
+        result.push(current);
+    }
+}
+
 export function handlePowers(expression: Expression) {
     const result: Expression = [];
 
@@ -239,8 +259,11 @@ export function evaluate(list: Expression): number {
         const leftValue = evaluate([left]);
         const rightValue = evaluate([right]);
 
-        const result = getOperator(operator.text)!.operation(leftValue, rightValue);
-        list[leftIndex] = createTerm(result.toString());
+        const result = getOperator(operator.text)!.operation(
+            createTerm(leftValue.toString()) as Term<"number">,
+            createTerm(rightValue.toString()) as Term<"number">
+        );
+        list[leftIndex] = result;
         list.splice(operatorIndex, 2);
     };
 
@@ -260,7 +283,7 @@ export function evaluate(list: Expression): number {
 /**
  * Freezes an expression so it can't be changed anymore.
  * Useful to tell some operations not to dig to deep in this expression (parentheses)
- * 
+ *
  * @param terms the expression to be frozen
  * @returns the frozen expression
  */

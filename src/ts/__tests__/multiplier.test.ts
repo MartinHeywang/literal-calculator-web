@@ -1,4 +1,4 @@
-import { createMultiplierObject, getMultiplierValue, incrementFactor, multiplierToString } from "../multiplier";
+import { createMultiplierObject, getMultiplierValue, incrementFactor, stringifyMultiplier } from "../multiplier";
 
 describe("creation", () => {
     test("creates empty object", () => {
@@ -62,7 +62,7 @@ describe("to-string", () => {
 
         }
 
-        expect(multiplierToString(multiplier)).toBe("");
+        expect(stringifyMultiplier(multiplier)).toBe("");
     })
 
     test("basic multiplier", () => {
@@ -70,7 +70,7 @@ describe("to-string", () => {
             x: 2
         }
 
-        expect(multiplierToString(multiplier)).toBe("x^2");
+        expect(stringifyMultiplier(multiplier)).toBe("x^2");
     })
 
     test("complex multiplier", () => {
@@ -82,6 +82,6 @@ describe("to-string", () => {
             b: 3
         }
 
-        expect(multiplierToString(multiplier)).toBe("a^3b^3k^8xz^2");
+        expect(stringifyMultiplier(multiplier)).toBe("a^3b^3k^8xz^2");
     })
 })

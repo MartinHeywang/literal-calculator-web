@@ -1,28 +1,154 @@
+import { evaluate, frozenExpression, isKnown } from "../expression";
+import { mergeMultipliers, sameMultiplier, setFactor, stringifyMultiplier, subtractMultipliers } from "../multiplier";
+import { createTerm, Term } from "./terms";
+
 export const operators = {
     sum: {
         priority: 0,
         symbol: "+",
-        operation: (a: number, b: number) => a + b,
+        operation: (a: Term<"number">, b: Term<"number">) => {
+            const known = {
+                a: isKnown([a]),
+                b: isKnown([b]),
+                get both() {
+                    return this.a && this.b;
+                },
+            };
+
+            if (known.both) {
+                const values = {
+                    a: evaluate([a]),
+                    b: evaluate([b]),
+                };
+
+                return createTerm((values.a + values.b).toString());
+            }
+
+            // can't make the sum of, e.g 2x + 2y
+            // froze it!
+            if (!sameMultiplier(a.data.multiplier, b.data.multiplier)) return frozenExpression([a, createTerm("+"), b]);
+
+            const resultValue = evaluate([a]) + evaluate([b]);
+
+            const result: Term<"number"> = {
+                type: "number",
+                text: `${resultValue}${stringifyMultiplier(a.data.multiplier)}`,
+
+                data: {
+                    value: resultValue,
+                    multiplier: a.data.multiplier,
+                },
+            };
+
+            return result;
+        },
     },
     difference: {
         priority: 0,
         symbol: "-",
-        operation: (a: number, b: number) => a - b,
+        operation: (a: Term<"number">, b: Term<"number">) => {
+            const known = {
+                a: isKnown([a]),
+                b: isKnown([b]),
+                get both() {
+                    return this.a && this.b;
+                },
+            };
+
+            if (known.both) {
+                const values = {
+                    a: evaluate([a]),
+                    b: evaluate([b]),
+                };
+
+                return createTerm((values.a - values.b).toString());
+            }
+
+            // can't make the sum of, e.g "2x - 2y"
+            // froze it!
+            if (!sameMultiplier(a.data.multiplier, b.data.multiplier)) return frozenExpression([a, createTerm("-") ,b]);
+
+            const resultValue = evaluate([a]) - evaluate([b]);
+
+            const result: Term<"number"> = {
+                type: "number",
+                text: `${resultValue}${stringifyMultiplier(a.data.multiplier)}`,
+
+                data: {
+                    value: resultValue,
+                    multiplier: a.data.multiplier,
+                },
+            };
+
+            return result;
+        },
     },
     product: {
         priority: 1,
         symbol: "*",
-        operation: (a: number, b: number) => a * b,
+        operation: (a: Term<"number">, b: Term<"number">) => {
+            const numericalValue = a.data.value * b.data.value;
+
+            const multiplier = mergeMultipliers(a.data.multiplier, b.data.multiplier);
+
+            const result: Term<"number"> = {
+                type: "number",
+                text: `${numericalValue}${stringifyMultiplier(multiplier)}`,
+
+                data: {
+                    value: numericalValue,
+                    multiplier
+                }
+            }
+
+            return result;
+        },
     },
     quotient: {
         priority: 1,
         symbol: "/",
-        operation: (a: number, b: number) => a / b,
+        operation: (a: Term<"number">, b: Term<"number">) => {
+            const numericalValue = a.data.value / b.data.value;
+
+            const multiplier = subtractMultipliers(a.data.multiplier, b.data.multiplier);
+
+            const result: Term<"number"> = {
+                type: "number",
+                text: `${numericalValue}${stringifyMultiplier(multiplier)}`,
+
+                data: {
+                    value: numericalValue,
+                    multiplier,
+                },
+            };
+
+            return result;
+        },
     },
     power: {
         priority: 2,
         symbol: "^",
-        operation: (a: number, b: number) => Math.pow(a, b),
+        operation: (raised: Term<"number">, power: Term<"number">) => {
+            const known = {
+                raised: isKnown([raised]),
+                power: isKnown([power]),
+                get both() {
+                    return this.raised && this.power
+                }
+            }
+
+            if(!known.power) {
+                return frozenExpression([raised, createTerm("^"), power]);
+            }
+            if(!known.raised) {
+                const powerValue = evaluate([power]);
+
+                setFactor(raised.data.multiplier, raised.text, powerValue);
+                return raised;
+            }
+
+            return createTerm(Math.pow(raised.data.value, power.data.value).toString());
+        },
     },
 };
 
@@ -43,11 +169,11 @@ export function isOperator(symbol: string, options?: { priority?: number }) {
     if (!symbol || symbol.length !== 1) return false;
 
     const name = getOperatorName(symbol) as OperatorName;
-    if(name === null) return false; // not found
+    if (name === null) return false; // not found
 
     // no priority specified, or matches
-    if(options?.priority === undefined) return true;
-    if(options.priority === operators[name].priority) return true;
+    if (options?.priority === undefined) return true;
+    if (options.priority === operators[name].priority) return true;
 
     return false;
 }
@@ -66,7 +192,7 @@ export function getOperatorName(symbol: string) {
 
 export function getOperator(symbol: string) {
     const name = getOperatorName(symbol) as OperatorName;
-    if(name === null) return null;
+    if (name === null) return null;
 
     return operators[name];
 }

@@ -3,7 +3,7 @@ import {
     getMultiplierValue,
     incrementFactor,
     Multiplier,
-    multiplierToString,
+    stringifyMultiplier,
 } from "../multiplier";
 import { isLetter } from "./letter";
 import { Term } from "./terms";
@@ -90,7 +90,7 @@ export function merge(digits: Term<"digit">[], letters: Term<"letter">[]) {
     });
 
     const number: Term<"number"> = {
-        text: `${value.toString()}${multiplierToString(multiplier)}`,
+        text: `${value.toString()}${stringifyMultiplier(multiplier)}`,
         type: "number",
 
         data: {
