@@ -1,3 +1,4 @@
+import { stringifyTerm } from "../expression";
 import {
     createMultiplierObject,
     getMultiplierValue,
@@ -13,10 +14,11 @@ export type NumberData = {
     multiplier: Multiplier;
 };
 
-export function isNumber(term: string) {
-    if (!term || term.length === 0) return false;
+export function isNumber(term: string | Term) {
+    const toBeChecked = term && typeof term === "object" ? stringifyTerm(term) : term || "";
+    if (!toBeChecked || toBeChecked.length === 0) return false;
 
-    return /^(-?[0-9]*(\.?[0-9]+)?[a-z]*){1}$/g.test(term);
+    return /^(-?[0-9]*(\.?[0-9]+)?[a-z]*){1}$/g.test(toBeChecked);
 }
 
 export function extractValue(term: string) {
@@ -84,13 +86,12 @@ export function merge(digits: Term<"digit">[], letters: Term<"letter">[]) {
     letters.forEach(letter => {
         incrementFactor(
             multiplier,
-            letter.text,
-            getMultiplierValue(letter.data.multiplier, letter.text)
+            stringifyTerm(letter),
+            getMultiplierValue(letter.data.multiplier, stringifyTerm(letter))
         );
     });
 
     const number: Term<"number"> = {
-        text: `${value.toString()}${stringifyMultiplier(multiplier)}`,
         type: "number",
 
         data: {
@@ -100,4 +101,8 @@ export function merge(digits: Term<"digit">[], letters: Term<"letter">[]) {
     };
 
     return number;
+}
+
+export function stringifyNumber(term: Term<"number">) {
+    return `${term.data.value !== 1 ? term.data.value : ""}${stringifyMultiplier(term.data.multiplier)}`
 }

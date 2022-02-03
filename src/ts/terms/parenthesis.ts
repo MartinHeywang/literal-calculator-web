@@ -1,3 +1,6 @@
+import { stringifyTerm } from "../expression";
+import { Term } from "./terms";
+
 export type ParenthesisData = {
     type: "parenthesis" | "bracket";
     direction: "opening" | "closing";
@@ -8,23 +11,32 @@ export type ParenthesisData = {
  *
  * You give an option object to only allow opening / closing parenthesis. (by, default: both)
  *
- * @param symbol the character to be checked
+ * @param toBeChecked the character to be checked
  * @param options optional, provide it if you want grainer control over which parenthesis will be accepted
  * @returns true or false based on the result
  */
 export function isParenthesis(
-    symbol: string,
+    term: string | Term,
     options: { includeOpenings?: boolean; includeClosings?: boolean } = {
         includeOpenings: true,
         includeClosings: true,
     }
 ) {
-    if (!symbol || symbol.length !== 1) return false;
+    const toBeChecked = term && typeof term === "object" ? stringifyTerm(term) : term || "";
+    if (!toBeChecked || toBeChecked.length !== 1) return false;
 
-    if (symbol === "(" && options.includeOpenings !== false) return true;
-    if (symbol === "[" && options.includeOpenings !== false) return true;
-    if (symbol === ")" && options.includeClosings !== false) return true;
-    if (symbol === "]" && options.includeClosings !== false) return true;
+    if (options.includeOpenings !== false && toBeChecked === "(") return true;
+    if (options.includeOpenings !== false && toBeChecked === "[") return true;
+    if (options.includeClosings !== false && toBeChecked === ")") return true;
+    if (options.includeClosings !== false && toBeChecked === "]") return true;
 
     return false;
+}
+
+export function stringifyParenthesis(term: Term<"parenthesis">) {
+    if(term.data.type === "parenthesis" && term.data.direction === "opening") return "(";
+    if(term.data.type === "parenthesis" && term.data.direction === "closing") return "]";
+    if(term.data.type === "bracket" && term.data.direction === "opening") return "[";
+    if(term.data.type === "bracket" && term.data.direction === "closing") return "]";
+    return "";   
 }

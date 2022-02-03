@@ -1,5 +1,5 @@
-import { evaluate, frozenExpression, isKnown } from "../expression";
-import { mergeMultipliers, sameMultiplier, setFactor, stringifyMultiplier, subtractMultipliers } from "../multiplier";
+import { evaluate, frozenExpression, isKnown, stringifyTerm } from "../expression";
+import { mergeMultipliers, sameMultiplier, setFactor, subtractMultipliers } from "../multiplier";
 import { createTerm, Term } from "./terms";
 
 export const operators = {
@@ -28,11 +28,10 @@ export const operators = {
             // froze it!
             if (!sameMultiplier(a.data.multiplier, b.data.multiplier)) return frozenExpression([a, createTerm("+"), b]);
 
-            const resultValue = evaluate([a]) + evaluate([b]);
+            const resultValue = a.data.value + b.data.value;
 
             const result: Term<"number"> = {
                 type: "number",
-                text: `${resultValue}${stringifyMultiplier(a.data.multiplier)}`,
 
                 data: {
                     value: resultValue,
@@ -68,11 +67,10 @@ export const operators = {
             // froze it!
             if (!sameMultiplier(a.data.multiplier, b.data.multiplier)) return frozenExpression([a, createTerm("-") ,b]);
 
-            const resultValue = evaluate([a]) - evaluate([b]);
+            const resultValue = a.data.value - b.data.value;
 
             const result: Term<"number"> = {
                 type: "number",
-                text: `${resultValue}${stringifyMultiplier(a.data.multiplier)}`,
 
                 data: {
                     value: resultValue,
@@ -93,7 +91,6 @@ export const operators = {
 
             const result: Term<"number"> = {
                 type: "number",
-                text: `${numericalValue}${stringifyMultiplier(multiplier)}`,
 
                 data: {
                     value: numericalValue,
@@ -108,13 +105,14 @@ export const operators = {
         priority: 1,
         symbol: "/",
         operation: (a: Term<"number">, b: Term<"number">) => {
+            if(b.data.value === 0) throw new Error("Can't divide term by 0");
+            
             const numericalValue = a.data.value / b.data.value;
 
             const multiplier = subtractMultipliers(a.data.multiplier, b.data.multiplier);
 
             const result: Term<"number"> = {
                 type: "number",
-                text: `${numericalValue}${stringifyMultiplier(multiplier)}`,
 
                 data: {
                     value: numericalValue,
@@ -143,7 +141,7 @@ export const operators = {
             if(!known.raised) {
                 const powerValue = evaluate([power]);
 
-                setFactor(raised.data.multiplier, raised.text, powerValue);
+                setFactor(raised.data.multiplier, stringifyTerm(raised), powerValue);
                 return raised;
             }
 
@@ -154,7 +152,7 @@ export const operators = {
 
 export type OperatorData = {
     priority: number;
-    name: string;
+    name: OperatorName;
 };
 
 export type OperatorName = keyof typeof operators;
@@ -162,13 +160,14 @@ export type OperatorName = keyof typeof operators;
 /**
  * Checks if the given char is one of the supported operators : + - * / ^
  *
- * @param symbol the character to be checked
+ * @param toBeChecked the character to be checked
  * @returns true or false based on the result
  */
-export function isOperator(symbol: string, options?: { priority?: number }) {
-    if (!symbol || symbol.length !== 1) return false;
+export function isOperator(term: string | Term, options?: { priority?: number }) {
+    const toBeChecked = term && typeof term === "object" ? stringifyTerm(term) : term || "";
+    if (!toBeChecked || toBeChecked.length !== 1) return false;
 
-    const name = getOperatorName(symbol) as OperatorName;
+    const name = getOperatorName(toBeChecked) as OperatorName;
     if (name === null) return false; // not found
 
     // no priority specified, or matches
@@ -186,7 +185,7 @@ export function getOperatorName(symbol: string) {
             const operator = operators[key as OperatorName];
 
             return operator.symbol === symbol;
-        }) ?? null
+        }) as OperatorName ?? null
     );
 }
 
@@ -206,4 +205,8 @@ export function getOperatorPriority(symbol: string) {
         }) as OperatorName) ?? null;
 
     return operators[key].priority;
+}
+
+export function stringifyOperator(term: Term<"operator">) {
+    return `${operators[term.data.name].symbol}`;
 }

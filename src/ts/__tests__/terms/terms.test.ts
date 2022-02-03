@@ -7,7 +7,6 @@ describe("create-term", () => {
         const output = createTerm(input);
 
         const expected: Term<"number"> = {
-            text: input,
             type: "number",
 
             data: {
@@ -25,7 +24,6 @@ describe("create-term", () => {
         const output = createTerm(input);
 
         const expected: Term<"number"> = {
-            text: input,
             type: "number",
 
             data: {
@@ -45,7 +43,6 @@ describe("create-term", () => {
         const output = createTerm(input);
 
         const expected: Term<"operator"> = {
-            text: input,
             type: "operator",
 
             data: {
@@ -63,7 +60,6 @@ describe("create-term", () => {
         const output = createTerm(input);
 
         const expected: Term<"parenthesis"> = {
-            text: input,
             type: "parenthesis",
 
             data: {

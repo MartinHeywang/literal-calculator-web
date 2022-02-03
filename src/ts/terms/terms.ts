@@ -7,7 +7,6 @@ import { isParenthesis, ParenthesisData } from "./parenthesis";
 export type TermType = "digit" | "letter" | "number" | "operator" | "parenthesis";
 
 export type Term<T extends TermType = TermType> = {
-    text: string;
     type: T;
 
     // prettier-ignore
@@ -24,7 +23,6 @@ export type Term<T extends TermType = TermType> = {
 export function createTerm(text: string) {
     if (isParenthesis(text)) {
         const data: Term<"parenthesis"> = {
-            text: text,
             type: "parenthesis",
 
             data: {
@@ -36,7 +34,6 @@ export function createTerm(text: string) {
         return data;
     } else if (isOperator(text)) {
         const data: Term<"operator"> = {
-            text: text,
             type: "operator",
             
             data: {
@@ -47,7 +44,6 @@ export function createTerm(text: string) {
         return data;
     } else if (isNumber(text)) {
         const data: Term<"number"> = {
-            text: text,
             type: "number",
 
             data: {

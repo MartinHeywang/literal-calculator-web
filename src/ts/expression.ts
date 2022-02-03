@@ -1,9 +1,8 @@
 import { minify, list, arrange } from "./format";
 import { setFactor } from "./multiplier";
-import { isLetter } from "./terms/letter";
-import { NumberData } from "./terms/number";
-import { getOperator, isOperator, operators } from "./terms/operator";
-import { isParenthesis } from "./terms/parenthesis";
+import { NumberData, stringifyNumber } from "./terms/number";
+import { getOperator, isOperator, operators, stringifyOperator } from "./terms/operator";
+import { isParenthesis, stringifyParenthesis } from "./terms/parenthesis";
 import { createTerm, Term } from "./terms/terms";
 import { regexCheck, parenthesesCheck, orderCheck } from "./verify";
 
@@ -64,18 +63,18 @@ function structure(list: Term[]) {
     let nesting = 0;
 
     for (let i = 0; i < list.length; i++) {
-        const symbol = list[i];
+        const term = list[i];
 
         // every nested symbol will be structured recursively
-        if (nesting !== 0) cache.push(symbol);
+        if (nesting !== 0) cache.push(term);
 
-        if (isParenthesis(symbol.text, { includeClosings: false })) {
+        if (isParenthesis(stringifyTerm(term), { includeClosings: false })) {
             nesting++;
 
             // if nesting equals 1, then it was at zero and has not been added before;
             // the opening parenthesis needs to be added to the cache.
-            if (nesting === 1) cache.push(symbol);
-        } else if (isParenthesis(symbol.text, { includeOpenings: false })) {
+            if (nesting === 1) cache.push(term);
+        } else if (isParenthesis(stringifyTerm(term), { includeOpenings: false })) {
             nesting--;
 
             // closed parentheses; if we're not nested anymore
@@ -88,7 +87,7 @@ function structure(list: Term[]) {
             }
         }
 
-        if (nesting === 0) result.push(symbol);
+        if (nesting === 0) result.push(term);
     }
 
     // before returning, flatten arrays with only one element
@@ -99,6 +98,20 @@ function structure(list: Term[]) {
         }
         return element;
     });
+}
+
+export function stringifyTerm(term: Term) {
+    if (term.type === "number") {
+        return stringifyNumber(term as Term<"number">);
+    }
+    if (term.type === "operator") {
+        return stringifyOperator(term as Term<"operator">);
+    }
+    if (term.type === "parenthesis") {
+        return stringifyParenthesis(term as Term<"parenthesis">);
+    }
+
+    throw new Error("Can't stringify term with wrong type.")
 }
 
 /**
@@ -112,11 +125,14 @@ function structure(list: Term[]) {
 export function isKnown(list: Expression): boolean {
     return list.every(element => {
         if (Array.isArray(element)) {
-            // it's a SymbolList!
+            // go deeper
             return isKnown(element);
         }
 
-        return !isLetter(element.text);
+        if (isOperator(element) || isParenthesis(element)) return true;
+
+        // empty multiplier
+        return Object.keys((element as Term<"number">).data.multiplier).length === 0;
     });
 }
 
@@ -157,7 +173,7 @@ export function handlePowers(expression: Expression) {
         }
 
         // not a power? i don't care
-        if (symbol.text !== operators.power.symbol) {
+        if (stringifyTerm(symbol) !== operators.power.symbol) {
             result.push(symbol);
             continue;
         }
@@ -188,7 +204,7 @@ export function handlePowers(expression: Expression) {
             // a^2 --> updated multiplier
             if (!Array.isArray(raised)) {
                 // change the value of the multiplier
-                setFactor((raised as Term<"number">).data.multiplier, raised.text, powerValue);
+                setFactor((raised as Term<"number">).data.multiplier, stringifyTerm(raised), powerValue);
                 skipNextIteration();
                 continue;
             }
@@ -259,7 +275,7 @@ export function evaluate(list: Expression): number {
         const leftValue = evaluate([left]);
         const rightValue = evaluate([right]);
 
-        const result = getOperator(operator.text)!.operation(
+        const result = getOperator(stringifyTerm(operator))!.operation(
             createTerm(leftValue.toString()) as Term<"number">,
             createTerm(rightValue.toString()) as Term<"number">
         );
@@ -320,7 +336,7 @@ export function findOperator(expression: Expression, options?: { priority: numbe
 
         if (Array.isArray(term)) continue;
 
-        if (isOperator(term.text, { priority: options?.priority })) return i;
+        if (isOperator(stringifyTerm(term), { priority: options?.priority })) return i;
     }
 
     return null;

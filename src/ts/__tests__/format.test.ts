@@ -121,9 +121,6 @@ describe("arrange", () => {
     
             const output = arrange(input);
 
-            console.log(input)
-            console.log(output)
-    
             expect(output).toStrictEqual(["-5", "*", "(", "3", "*", "x", "+", "5", ")"]);
         })
     })

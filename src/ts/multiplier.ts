@@ -25,7 +25,7 @@ export function getMultiplierValue(multiplier: Multiplier, factor: string) {
 }
 
 export function stringifyMultiplier(multiplier: Multiplier) {
-    return Object.keys(multiplier)
+    return Object.keys(optimizeMultiplier(multiplier))
         .sort()
         .reduce((previous, letter) => {
             const value = multiplier[letter]!;
@@ -52,7 +52,7 @@ export function mergeMultipliers(...multipliers: Multiplier[]) {
         })
     })
 
-    return result;
+    return optimizeMultiplier(result);
 }
 
 export function subtractMultipliers(a: Multiplier, b: Multiplier) {
@@ -62,5 +62,17 @@ export function subtractMultipliers(a: Multiplier, b: Multiplier) {
         decrementFactor(result, key, b[key]);
     })
 
-    return result;
+    return optimizeMultiplier(result);
+}
+
+export function optimizeMultiplier(a: Multiplier) {
+    Object.keys(a).forEach(key => {
+        const value = a[key];
+
+        if(value > 0) return;
+
+        delete a[key];
+    })
+
+    return a;
 }
