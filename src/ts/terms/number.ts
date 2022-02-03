@@ -1,12 +1,10 @@
 import { stringifyTerm } from "../expression";
 import {
     createMultiplierObject,
-    getMultiplierValue,
     incrementFactor,
     Multiplier,
     stringifyMultiplier,
 } from "../multiplier";
-import { isLetter } from "./letter";
 import { Term } from "./terms";
 
 export type NumberData = {
@@ -15,10 +13,39 @@ export type NumberData = {
 };
 
 export function isNumber(term: string | Term) {
-    const toBeChecked = term && typeof term === "object" ? stringifyTerm(term) : term || "";
-    if (!toBeChecked || toBeChecked.length === 0) return false;
+    if(!term) return false;
+
+    const toBeChecked = typeof term === "object" ? stringifyTerm(term) : term;
 
     return /^(-?[0-9]*(\.?[0-9]+)?[a-z]*){1}$/g.test(toBeChecked);
+}
+
+/**
+ * Checks if the given symbol is a digit
+ *
+ * @param symbol the symbol to check
+ * @returns true if the symbol is a digit, false otherwise
+ */
+export function isDigit(term: string | Term) {
+    if (!term) return false;
+
+    const toBeChecked = typeof term === "object"  ? stringifyTerm(term) : term;
+
+    return /^-?[0-9]+\.?[0-9]*$/g.test(toBeChecked);
+}
+
+/**
+ * Checks if the given symbol is a letter.
+ *
+ * @param term the symbol to check
+ * @returns true if the symbol is a letter, false otherwise
+ */
+export function isLetter(term: string) {
+    if (!term) return false;
+
+    const toBeChecked = typeof term === "object" ? stringifyTerm(term) : term;
+
+    return /^-?[a-z]$/g.test(toBeChecked);
 }
 
 export function extractValue(term: string) {
@@ -67,40 +94,6 @@ export function extractMultiplier(term: string) {
     }
 
     return multiplier;
-}
-
-/**
- * Merges the array of digits and the array of letters into a single number.
- *
- * The digits are multiplied together, and the letters are creating the multiplier.
- *
- * @param digits an array of digits
- * @param letters an array of letters
- */
-export function merge(digits: Term<"digit">[], letters: Term<"letter">[]) {
-    const value = digits.reduce((previous, digit) => {
-        return previous * digit.data.value;
-    }, 1);
-
-    const multiplier = createMultiplierObject();
-    letters.forEach(letter => {
-        incrementFactor(
-            multiplier,
-            stringifyTerm(letter),
-            getMultiplierValue(letter.data.multiplier, stringifyTerm(letter))
-        );
-    });
-
-    const number: Term<"number"> = {
-        type: "number",
-
-        data: {
-            value,
-            multiplier,
-        },
-    };
-
-    return number;
 }
 
 export function stringifyNumber(term: Term<"number">) {

@@ -1,4 +1,4 @@
-import { extractMultiplier, extractValue, isNumber } from "../../terms/number";
+import { extractMultiplier, extractValue, isDigit, isLetter, isNumber } from "../../terms/number";
 
 describe("is number", () => {
     test("basic digit", () => {
@@ -35,6 +35,58 @@ describe("is number", () => {
         const input = "-345.238xs";
 
         expect(isNumber(input)).toBe(true);
+    });
+});
+
+describe("is letter", () => {
+    test("basic digit", () => {
+        const input = "5";
+
+        expect(isLetter(input)).toBe(false);
+    });
+
+    test("basic letter", () => {
+        const input = "x";
+
+        expect(isLetter(input)).toBe(true);
+    });
+
+    test("negative letter", () => {
+        const input = "-x";
+
+        expect(isLetter(input)).toBe(true);
+    });
+});
+
+describe("is digit", () => {
+    test("basic digit", () => {
+        const input = "5";
+
+        expect(isDigit(input)).toBe(true);
+    });
+
+    test("basic letter", () => {
+        const input = "x";
+
+        expect(isDigit(input)).toBe(false);
+    });
+
+    test("negative number", () => {
+        const input = "-2";
+
+        expect(isDigit(input)).toBe(true);
+    });
+
+    test("decimal number", () => {
+        const input = "0.5";
+
+        expect(isDigit(input)).toBe(true);
+    });
+
+    test("complex digit", () => {
+        const input = "-546.245326";
+
+        expect(isDigit(input)).toBe(true);
     });
 });
 

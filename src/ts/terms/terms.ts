@@ -1,10 +1,8 @@
 import { extractMultiplier, extractValue, isNumber, NumberData } from "./number";
-import { DigitData } from "./digit";
-import { LetterData } from "./letter";
 import { getOperatorName, getOperatorPriority, isOperator, OperatorData } from "./operator";
 import { isParenthesis, ParenthesisData } from "./parenthesis";
 
-export type TermType = "digit" | "letter" | "number" | "operator" | "parenthesis";
+export type TermType = "number" | "operator" | "parenthesis";
 
 export type Term<T extends TermType = TermType> = {
     type: T;
@@ -12,8 +10,6 @@ export type Term<T extends TermType = TermType> = {
     // prettier-ignore
     data: 
         T extends "operator" ? OperatorData
-        : T extends "digit" ? DigitData
-        : T extends "letter" ? LetterData
         : T extends "parenthesis" ? ParenthesisData
         : T extends "number" ? NumberData 
         : null // won't happen

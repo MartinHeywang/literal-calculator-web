@@ -1,6 +1,4 @@
-import { isDigit } from "./terms/digit";
-import { isLetter } from "./terms/letter";
-import { isNumber } from "./terms/number";
+import { isNumber, isLetter, isDigit } from "./terms/number";
 import { isOperator } from "./terms/operator";
 import { isParenthesis } from "./terms/parenthesis";
 

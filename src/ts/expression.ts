@@ -111,7 +111,7 @@ export function stringifyTerm(term: Term) {
         return stringifyParenthesis(term as Term<"parenthesis">);
     }
 
-    throw new Error("Can't stringify term with wrong type.")
+    throw new Error("Can't stringify term of an unknown type.")
 }
 
 /**
