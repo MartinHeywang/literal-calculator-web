@@ -136,17 +136,26 @@ export function isKnown(list: Expression): boolean {
     });
 }
 
+export function reduce(expression: Expression) {
+    let result = expression;
+    result = handleKnown(expression);
+    result = handlePowers(expression);
+
+    return result;
+}
+
 export function handleKnown(expression: Expression) {
-    const result = [];
+    const result: Expression = [];
 
     for (let i = 0; i < expression.length; i++) {
         const current = expression[i];
 
         if (Array.isArray(current)) {
             try {
-                result.push(evaluate(current));
+                result.push(createTerm(evaluate([current]).toString()));
             } catch {
-                // couldn't evaluate, dig deeper
+                // couldn't evaluate (e.g expression is unknown)
+                // dig deeper to find a part that may be known
                 result.push(handleKnown(current));
             }
             continue;
@@ -154,6 +163,8 @@ export function handleKnown(expression: Expression) {
 
         result.push(current);
     }
+
+    return result;
 }
 
 export function handlePowers(expression: Expression) {
