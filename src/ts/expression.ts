@@ -27,7 +27,9 @@ export function createExpression(text: string) {
     }
 
     const withData = addData(arranged);
-    const structured = structure(withData);
+    const withDepth = giveDepth(withData);
+
+    const structured = structure(withDepth);
 
     return structured;
 }
@@ -55,7 +57,7 @@ function addData(list: string[]) {
  * @param list the list to proceed
  * @returns the new, edited SymbolList
  */
-function structure(list: Term[]) {
+function giveDepth(list: Term[]) {
     const result: Expression = [];
 
     // cache the content when in between parentheses
@@ -81,7 +83,7 @@ function structure(list: Term[]) {
             if (nesting === 0) {
                 // recursively call structure()
                 // slice() helps removing the opening and closing parentheses
-                result.push(structure(cache.slice(1, -1)));
+                result.push(giveDepth(cache.slice(1, -1)));
                 cache = [];
                 continue;
             }
@@ -100,6 +102,62 @@ function structure(list: Term[]) {
     });
 }
 
+function structure(expression: Expression) {
+    console.log("%cStructuring:", "color: hotpink");
+    console.log(stringifyExpression(expression));
+
+    const findOperators = () => ({
+        2: findOperator(expression, { priority: 2 }),
+        1: findOperator(expression, { priority: 1 }),
+        0: findOperator(expression, { priority: 0 }),
+    });
+    let firstOperators = findOperators();
+
+    const operatorsLeft = () => {
+        firstOperators = findOperators();
+        return firstOperators[2] !== null || firstOperators[1] !== null || firstOperators[0] !== null;
+    };
+
+    while (operatorsLeft()) {
+        console.group("%cNew iteration", "color: green");
+        const operatorIndex = (firstOperators[2] ?? firstOperators[1] ?? firstOperators[0])!;
+
+        const leftIndex = operatorIndex - 1;
+        const rightIndex = operatorIndex + 1;
+
+        const left = expression[leftIndex] ?? null;
+        const operator = expression[operatorIndex]! as Term<"operator">;
+        const right = expression[rightIndex] ?? null;
+
+        console.log(stringifyTerm(operator));
+
+        if (!left || !right) {
+            throw new Error("Could not structure misconstructed expression.");
+        }
+
+        console.group("%cleft", "color: pink");
+        const leftStructured = Array.isArray(left) ? structure(left) : (() => {
+            console.log(stringifyTerm(left));
+            return left;
+        })();
+        console.groupEnd();
+        console.group("%cright", "color: pink");
+        const rightStructured = Array.isArray(right) ? structure(right) : (() => {
+            console.log(stringifyTerm(right));
+            return right;
+        })();
+        console.groupEnd();
+
+        expression[leftIndex] = [leftStructured, operator, rightStructured];
+        expression.splice(operatorIndex, 2);
+
+        console.log(Array.from(expression));
+        console.groupEnd();
+    }
+
+    return expression[0];
+}
+
 export function stringifyTerm(term: Term) {
     if (term.type === "number") {
         return stringifyNumber(term as Term<"number">);
@@ -111,7 +169,7 @@ export function stringifyTerm(term: Term) {
         return stringifyParenthesis(term as Term<"parenthesis">);
     }
 
-    throw new Error("Can't stringify term of an unknown type.")
+    throw new Error("Can't stringify term of an unknown type.");
 }
 
 /**
@@ -351,4 +409,24 @@ export function findOperator(expression: Expression, options?: { priority: numbe
     }
 
     return null;
+}
+
+export function stringifyExpression(expression: Expression) {
+    let result = "";
+
+    for (let i = 0; i < expression.length; i++) {
+        const current = expression[i];
+
+        if (Array.isArray(current)) {
+            result += ` (${stringifyExpression(current)}) `;
+            continue;
+        }
+
+        const operator = isOperator(current);
+        if (operator) result += " ";
+        result += stringifyTerm(current);
+        if (operator) result += " ";
+    }
+
+    return result;
 }

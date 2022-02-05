@@ -15,5 +15,5 @@ e.compute.addEventListener("click", () => {
 
     const def = createExpression(textDef);
 
-    console.log(reduce(def));
+    console.log(reduce([def]));
 })
