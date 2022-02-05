@@ -1,5 +1,4 @@
-import { stringifyTerm } from "../expression";
-import { Term } from "./terms";
+import { Term, stringifyTerm } from "./terms";
 
 export type ParenthesisData = {
     type: "parenthesis" | "bracket";

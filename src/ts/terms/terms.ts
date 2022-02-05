@@ -1,6 +1,6 @@
-import { extractMultiplier, extractValue, isNumber, NumberData } from "./number";
-import { getOperatorName, getOperatorPriority, isOperator, OperatorData } from "./operator";
-import { isParenthesis, ParenthesisData } from "./parenthesis";
+import { extractMultiplier, extractValue, isNumber, NumberData, stringifyNumber } from "./number";
+import { getOperatorName, getOperatorPriority, isOperator, OperatorData, stringifyOperator } from "./operator";
+import { isParenthesis, ParenthesisData, stringifyParenthesis } from "./parenthesis";
 
 export type TermType = "number" | "operator" | "parenthesis";
 
@@ -51,4 +51,19 @@ export function createTerm(text: string) {
     } else {
         throw new Error(`The text '${text}' could not be recognized as a term.`);
     }
+}
+
+
+export function stringifyTerm(term: Term) {
+    if (term.type === "number") {
+        return stringifyNumber(term as Term<"number">);
+    }
+    if (term.type === "operator") {
+        return stringifyOperator(term as Term<"operator">);
+    }
+    if (term.type === "parenthesis") {
+        return stringifyParenthesis(term as Term<"parenthesis">);
+    }
+
+    throw new Error("Can't stringify term of an unknown type.");
 }

@@ -1,9 +1,9 @@
 import { minify, list, arrange } from "./format";
 import { setFactor } from "./multiplier";
-import { NumberData, stringifyNumber } from "./terms/number";
-import { getOperator, isOperator, operators, stringifyOperator } from "./terms/operator";
-import { isParenthesis, stringifyParenthesis } from "./terms/parenthesis";
-import { createTerm, Term } from "./terms/terms";
+import { NumberData } from "./terms/number";
+import { getOperator, isOperator, operators } from "./terms/operator";
+import { isParenthesis } from "./terms/parenthesis";
+import { createTerm, Term, stringifyTerm } from "./terms/terms";
 import { regexCheck, parenthesesCheck, orderCheck } from "./verify";
 
 export type Expression = (Term | Expression)[];
@@ -156,20 +156,6 @@ function structure(expression: Expression) {
     }
 
     return expression[0];
-}
-
-export function stringifyTerm(term: Term) {
-    if (term.type === "number") {
-        return stringifyNumber(term as Term<"number">);
-    }
-    if (term.type === "operator") {
-        return stringifyOperator(term as Term<"operator">);
-    }
-    if (term.type === "parenthesis") {
-        return stringifyParenthesis(term as Term<"parenthesis">);
-    }
-
-    throw new Error("Can't stringify term of an unknown type.");
 }
 
 /**

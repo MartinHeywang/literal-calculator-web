@@ -1,6 +1,6 @@
-import { evaluate, frozenExpression, isKnown, stringifyTerm } from "../expression";
+import { evaluate, frozenExpression, isKnown } from "../expression";
 import { mergeMultipliers, sameMultiplier, setFactor, subtractMultipliers } from "../multiplier";
-import { createTerm, Term } from "./terms";
+import { createTerm, Term, stringifyTerm } from "./terms";
 
 export const operators = {
     sum: {

@@ -1,11 +1,5 @@
-import { stringifyTerm } from "../expression";
-import {
-    createMultiplierObject,
-    incrementFactor,
-    Multiplier,
-    stringifyMultiplier,
-} from "../multiplier";
-import { Term } from "./terms";
+import { createMultiplierObject, incrementFactor, Multiplier, stringifyMultiplier } from "../multiplier";
+import { Term, stringifyTerm } from "./terms";
 
 export type NumberData = {
     value: number;
@@ -13,7 +7,7 @@ export type NumberData = {
 };
 
 export function isNumber(term: string | Term) {
-    if(!term) return false;
+    if (!term) return false;
 
     const toBeChecked = typeof term === "object" ? stringifyTerm(term) : term;
 
@@ -29,7 +23,7 @@ export function isNumber(term: string | Term) {
 export function isDigit(term: string | Term) {
     if (!term) return false;
 
-    const toBeChecked = typeof term === "object"  ? stringifyTerm(term) : term;
+    const toBeChecked = typeof term === "object" ? stringifyTerm(term) : term;
 
     return /^-?[0-9]+\.?[0-9]*$/g.test(toBeChecked);
 }
@@ -97,5 +91,5 @@ export function extractMultiplier(term: string) {
 }
 
 export function stringifyNumber(term: Term<"number">) {
-    return `${term.data.value !== 1 ? term.data.value : ""}${stringifyMultiplier(term.data.multiplier)}`
+    return `${term.data.value !== 1 ? term.data.value : ""}${stringifyMultiplier(term.data.multiplier)}`;
 }
