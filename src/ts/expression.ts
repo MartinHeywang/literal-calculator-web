@@ -6,7 +6,12 @@ import { isParenthesis } from "./terms/parenthesis";
 import { createTerm, Term, stringifyTerm } from "./terms/terms";
 import { regexCheck, parenthesesCheck, orderCheck } from "./verify";
 
-export type Expression = (Term | Expression)[];
+export type TermList = (Term | TermList)[];
+export type Expression = {
+    left: Expression | Term;
+    operator: Term<"operator">;
+    right: Expression | Term;
+};
 
 export function createExpression(text: string) {
     const minified = minify(text);
@@ -58,7 +63,7 @@ function addData(list: string[]) {
  * @returns the new, edited SymbolList
  */
 function giveDepth(list: Term[]) {
-    const result: Expression = [];
+    const result: TermList = [];
 
     // cache the content when in between parentheses
     let cache: Term[] = [];
@@ -102,60 +107,46 @@ function giveDepth(list: Term[]) {
     });
 }
 
-function structure(expression: Expression) {
-    console.log("%cStructuring:", "color: hotpink");
-    console.log(stringifyExpression(expression));
+function structure(list: TermList): Expression | Term {
+    if (list.length === 1) {
+        // lists with only one term are special
 
-    const findOperators = () => ({
-        2: findOperator(expression, { priority: 2 }),
-        1: findOperator(expression, { priority: 1 }),
-        0: findOperator(expression, { priority: 0 }),
-    });
-    let firstOperators = findOperators();
-
-    const operatorsLeft = () => {
-        firstOperators = findOperators();
-        return firstOperators[2] !== null || firstOperators[1] !== null || firstOperators[0] !== null;
-    };
-
-    while (operatorsLeft()) {
-        console.group("%cNew iteration", "color: green");
-        const operatorIndex = (firstOperators[2] ?? firstOperators[1] ?? firstOperators[0])!;
-
-        const leftIndex = operatorIndex - 1;
-        const rightIndex = operatorIndex + 1;
-
-        const left = expression[leftIndex] ?? null;
-        const operator = expression[operatorIndex]! as Term<"operator">;
-        const right = expression[rightIndex] ?? null;
-
-        console.log(stringifyTerm(operator));
-
-        if (!left || !right) {
-            throw new Error("Could not structure misconstructed expression.");
+        // in case we're facing a (user-defined) parenthesis, we have the unwrap it
+        if (Array.isArray(list[0])) {
+            return structure(list[0]);
         }
 
-        console.group("%cleft", "color: pink");
-        const leftStructured = Array.isArray(left) ? structure(left) : (() => {
-            console.log(stringifyTerm(left));
-            return left;
-        })();
-        console.groupEnd();
-        console.group("%cright", "color: pink");
-        const rightStructured = Array.isArray(right) ? structure(right) : (() => {
-            console.log(stringifyTerm(right));
-            return right;
-        })();
-        console.groupEnd();
-
-        expression[leftIndex] = [leftStructured, operator, rightStructured];
-        expression.splice(operatorIndex, 2);
-
-        console.log(Array.from(expression));
-        console.groupEnd();
+        // else just return the term -> there will be no operator to structure
+        return list[0];
     }
 
-    return expression[0];
+    const findOperators = () => ({
+        2: findLastOperator(list, { priority: 2 }),
+        1: findLastOperator(list, { priority: 1 }),
+        0: findLastOperator(list, { priority: 0 }),
+    });
+    let lastOperators = findOperators();
+
+    // lowest priority first -> the operator of the root expression will be the last to be computed
+    // that's to say the one that was written last + the one with the lowest priority
+    const operatorIndex = (lastOperators[0] ?? lastOperators[1] ?? lastOperators[2])!;
+
+    const left = list.slice(0, operatorIndex);
+    const operator = list[operatorIndex]! as Term<"operator">;
+    const right = list.slice(operatorIndex + 1 /*, until the end */);
+
+    if (!left || !right) {
+        throw new Error("Could not structure misconstructed expression.");
+    }
+
+    const leftStructured = structure(left);
+    const rightStructured = structure(right);
+
+    return {
+        left: leftStructured,
+        operator,
+        right: rightStructured,
+    };
 }
 
 /**
@@ -166,7 +157,7 @@ function structure(expression: Expression) {
  * @param list the symbol list to be checked
  * @returns true, if the value of the list is known, or not
  */
-export function isKnown(list: Expression): boolean {
+export function isKnown(list: TermList): boolean {
     return list.every(element => {
         if (Array.isArray(element)) {
             // go deeper
@@ -180,7 +171,7 @@ export function isKnown(list: Expression): boolean {
     });
 }
 
-export function reduce(expression: Expression) {
+export function reduce(expression: TermList) {
     let result = expression;
     result = handleKnown(expression);
     result = handlePowers(expression);
@@ -188,8 +179,8 @@ export function reduce(expression: Expression) {
     return result;
 }
 
-export function handleKnown(expression: Expression) {
-    const result: Expression = [];
+export function handleKnown(expression: TermList) {
+    const result: TermList = [];
 
     for (let i = 0; i < expression.length; i++) {
         const current = expression[i];
@@ -211,8 +202,8 @@ export function handleKnown(expression: Expression) {
     return result;
 }
 
-export function handlePowers(expression: Expression) {
-    const result: Expression = [];
+export function handlePowers(expression: TermList) {
+    const result: TermList = [];
 
     const popLastResult = () => result.pop();
 
@@ -291,7 +282,7 @@ export function handlePowers(expression: Expression) {
  * @param list the list of symbols to evaluate
  * @returns the value of the numerical expression
  */
-export function evaluate(list: Expression): number {
+export function evaluate(list: TermList): number {
     if (!isKnown(list)) throw new Error("An unknown list can't be evaluated.");
 
     if (list.length === 0) return 0;
@@ -358,7 +349,7 @@ export function evaluate(list: Expression): number {
  * @param terms the expression to be frozen
  * @returns the frozen expression
  */
-export function frozenExpression(terms: Expression): Expression {
+export function frozenExpression(terms: TermList): TermList {
     // here we are mismatching a mutable Expression with a readonly Expression. (return type annotation)
 
     // at runtime the array WILL be readonly
@@ -385,7 +376,7 @@ export function frozenExpression(terms: Expression): Expression {
  * @param options the criteria if needed
  * @returns the index of the first operator, or null if none were found.
  */
-export function findOperator(expression: Expression, options?: { priority: number }) {
+export function findOperator(expression: TermList, options?: { priority?: number }) {
     for (let i = 0; i < expression.length; i++) {
         const term = expression[i];
 
@@ -397,7 +388,19 @@ export function findOperator(expression: Expression, options?: { priority: numbe
     return null;
 }
 
-export function stringifyExpression(expression: Expression) {
+export function findLastOperator(expression: TermList, options?: { priority?: number }) {
+    for (let i = expression.length - 1; i >= 0; i--) {
+        const term = expression[i];
+
+        if (Array.isArray(term)) continue;
+
+        if (isOperator(stringifyTerm(term), { priority: options?.priority })) return i;
+    }
+
+    return null;
+}
+
+export function stringifyExpression(expression: TermList) {
     let result = "";
 
     for (let i = 0; i < expression.length; i++) {
