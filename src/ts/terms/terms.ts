@@ -16,7 +16,7 @@ export type Term<T extends TermType = TermType> = {
     ;
 };
 
-export function createTerm(text: string) {
+export function createTerm<T extends TermType>(text: string): Term<T> {
     if (isParenthesis(text)) {
         const data: Term<"parenthesis"> = {
             type: "parenthesis",
@@ -27,7 +27,7 @@ export function createTerm(text: string) {
             },
         };
 
-        return data;
+        return data as Term<T>;
     } else if (isOperator(text)) {
         const data: Term<"operator"> = {
             type: "operator",
@@ -37,7 +37,7 @@ export function createTerm(text: string) {
                 priority: getOperatorPriority(text)!,
             },
         };
-        return data;
+        return data as Term<T>;
     } else if (isNumber(text)) {
         const data: Term<"number"> = {
             type: "number",
@@ -47,7 +47,7 @@ export function createTerm(text: string) {
                 multiplier: extractMultiplier(text) || {},
             },
         };
-        return data;
+        return data as Term<T>;
     } else {
         throw new Error(`The text '${text}' could not be recognized as a term.`);
     }

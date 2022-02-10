@@ -1,16 +1,19 @@
 import { minify, list, arrange } from "./format";
-import { setFactor } from "./multiplier";
-import { NumberData } from "./terms/number";
-import { getOperator, isOperator, operators } from "./terms/operator";
+import { incrementFactor, isMultiplierEmpty, mergeMultipliers } from "./multiplier";
+import { parseValueToTerm, stringifyNumber } from "./terms/number";
+import { isOperator, operators } from "./terms/operator";
 import { isParenthesis } from "./terms/parenthesis";
 import { createTerm, Term, stringifyTerm } from "./terms/terms";
 import { regexCheck, parenthesesCheck, orderCheck } from "./verify";
 
 export type TermList = (Term | TermList)[];
 export type Expression = {
-    left: Expression | Term;
+    left: Expression | Term<"number">;
     operator: Term<"operator">;
-    right: Expression | Term;
+    right: Expression | Term<"number">;
+
+    // means that this operation can't be done directly
+    frozen?: boolean;
 };
 
 export function createExpression(text: string) {
@@ -107,7 +110,7 @@ function giveDepth(list: Term[]) {
     });
 }
 
-function structure(list: TermList): Expression | Term {
+function structure(list: TermList): Expression | Term<"number"> {
     if (list.length === 1) {
         // lists with only one term are special
 
@@ -117,7 +120,7 @@ function structure(list: TermList): Expression | Term {
         }
 
         // else just return the term -> there will be no operator to structure
-        return list[0];
+        return list[0] as Term<"number">;
     }
 
     const findOperators = () => ({
@@ -157,189 +160,134 @@ function structure(list: TermList): Expression | Term {
  * @param list the symbol list to be checked
  * @returns true, if the value of the list is known, or not
  */
-export function isKnown(list: TermList): boolean {
-    return list.every(element => {
-        if (Array.isArray(element)) {
-            // go deeper
-            return isKnown(element);
-        }
+export function isKnown(element: Expression | Term<"number">): boolean {
+    const isTermKnown = (term: Term<"number">) => {
+        return isMultiplierEmpty(term.data.multiplier);
+    };
 
-        if (isOperator(element) || isParenthesis(element)) return true;
+    if (!isExpression(element)) return isTermKnown(element);
 
-        // empty multiplier
-        return Object.keys((element as Term<"number">).data.multiplier).length === 0;
-    });
+    const expression = element;
+
+    return (
+        (isExpression(expression.left) ? isKnown(expression.left) : isTermKnown(expression.left)) &&
+        (isExpression(expression.right) ? isKnown(expression.right) : isTermKnown(expression.right))
+    );
 }
 
-export function reduce(expression: TermList) {
-    let result = expression;
-    result = handleKnown(expression);
-    result = handlePowers(expression);
+export function reduce(element: Expression | Term<"number">) {
+    // a term can't be reduced
+    if (!isExpression(element)) return element;
+
+    let result: Expression | Term = element;
+    result = handleKnown(element);
+    result = reduceSimplePowers(element);
+    result = reduceSimpleMultiplications(element);
 
     return result;
 }
 
-export function handleKnown(expression: TermList) {
-    const result: TermList = [];
+function handleKnown(expression: Expression | Term<"number">) {
+    if (!isExpression(expression)) return expression;
 
-    for (let i = 0; i < expression.length; i++) {
-        const current = expression[i];
+    if (!isKnown(expression)) {
+        // the whole expression is not known, search deeper
 
-        if (Array.isArray(current)) {
-            try {
-                result.push(createTerm(evaluate([current]).toString()));
-            } catch {
-                // couldn't evaluate (e.g expression is unknown)
-                // dig deeper to find a part that may be known
-                result.push(handleKnown(current));
-            }
-            continue;
-        }
+        if (isExpression(expression.left)) handleKnown(expression.left);
+        if (isExpression(expression.right)) handleKnown(expression.right);
 
-        result.push(current);
+        return expression;
     }
 
-    return result;
+    expression = parseValueToTerm(evaluate(expression));
+
+    return expression;
 }
 
-export function handlePowers(expression: TermList) {
-    const result: TermList = [];
+function reduceSimplePowers(element: Expression | Term<"number">): Expression | Term<"number"> {
+    if (!isExpression(element)) return element;
 
-    const popLastResult = () => result.pop();
+    const expression = element;
 
-    for (let i = 0; i < expression.length; i++) {
-        const symbol = expression[i];
+    if (isExpression(expression.left)) expression.left = reduceSimplePowers(expression.left);
+    if (isExpression(expression.right)) expression.right = reduceSimplePowers(expression.right);
 
-        const skipNextIteration = () => i++;
+    // if both the left and the right branch are simple terms, then we're facing a "simple multiplication"
+    if (
+        expression.operator.data.name === "power" &&
+        !isExpression(expression.left) &&
+        isKnown(expression.right)
+    ) {
+        incrementFactor(expression.left.data.multiplier, stringifyNumber(expression.left), evaluate(expression.right) - 1);
 
-        // recursively search through parentheses as well
-        if (Array.isArray(symbol)) {
-            result.push(handlePowers(symbol));
-            continue;
-        }
-
-        // not a power? i don't care
-        if (stringifyTerm(symbol) !== operators.power.symbol) {
-            result.push(symbol);
-            continue;
-        }
-
-        const raised = expression[i - 1]!;
-        const power = expression[i + 1]!;
-
-        const isRaisedKnown = isKnown([raised]);
-        const isPowerKnown = isKnown([power]);
-
-        // power is unknown, just isolate
-        // 2^n --> [2^n]
-        // x^n --> [x^n]
-        if (!isPowerKnown) {
-            popLastResult();
-            result.push(frozenExpression([raised, symbol, power]));
-            skipNextIteration();
-            continue;
-        }
-
-        // raised is unknown (but power is)
-        // a^2
-        // (48a + 5)^5
-
-        if (!isRaisedKnown) {
-            const powerValue = evaluate([power]);
-
-            // a^2 --> updated multiplier
-            if (!Array.isArray(raised)) {
-                // change the value of the multiplier
-                setFactor((raised as Term<"number">).data.multiplier, stringifyTerm(raised), powerValue);
-                skipNextIteration();
-                continue;
-            }
-
-            // raised it too complex, isolate
-            // (48a + 5)^5 --> [(48a + 5)^5]
-
-            popLastResult();
-            result.push(frozenExpression([raised, symbol, power]));
-            skipNextIteration();
-            continue;
-        }
-
-        // both power and raised are known
-        // 2^2 --> 4
-        // 3^2 --> 9
-
-        popLastResult();
-        result.push(createTerm(evaluate([raised, symbol, power]).toString()));
-        skipNextIteration();
+        return expression.left;
     }
 
-    return result;
+    return expression;
+}
+
+function reduceSimpleMultiplications(element: Expression | Term<"number">) {
+    if (!isExpression(element)) return element;
+
+    const expression = element;
+
+    if (isExpression(expression.left)) expression.left = reduceSimpleMultiplications(expression.left);
+    if (isExpression(expression.right)) expression.right = reduceSimpleMultiplications(expression.right);
+
+    // if both the left and the right branch are simple terms, then we're facing a "simple multiplication"
+    if (
+        expression.operator.data.name === "product" &&
+        !isExpression(expression.left) &&
+        !isExpression(expression.right)
+    ) {
+        const result: Term<"number"> = {
+            type: "number",
+
+            data: {
+                value: expression.left.data.value * expression.right.data.value,
+                multiplier: mergeMultipliers(
+                    expression.left.data.multiplier,
+                    expression.right.data.multiplier
+                ),
+            },
+        };
+
+        return result;
+    }
+
+    return expression;
 }
 
 /**
  * Evaluates the value of a numerical expression.
  *
- * @param list the list of symbols to evaluate
+ * @param expression the list of symbols to evaluate
  * @returns the value of the numerical expression
  */
-export function evaluate(list: TermList): number {
-    if (!isKnown(list)) throw new Error("An unknown list can't be evaluated.");
+export function evaluate(element: Expression | Term<"number">): number {
+    if (!isKnown(element)) throw new Error("An unknown element can't be evaluated.");
 
-    if (list.length === 0) return 0;
-    if (list.length === 1) {
-        if (!Array.isArray(list[0])) return (list[0].data as NumberData).value;
-        else return evaluate(list[0]);
+    if (!isExpression(element)) {
+        return element.data.value;
     }
 
-    const findOperators = () => ({
-        2: findOperator(list, { priority: 2 }),
-        1: findOperator(list, { priority: 1 }),
-        0: findOperator(list, { priority: 0 }),
-    });
+    const expression = element;
 
-    // first operators, by priority
-    let firstOperators = findOperators();
+    const leftTerm = (
+        isExpression(expression.left)
+            ? // evaluate deeper to create a term
+              createTerm(evaluate(expression.left).toString())
+            : // or get the term that's directly under our nose
+              expression.left
+    ) as Term<"number">;
+    const rightTerm = (
+        isExpression(expression.right)
+            ? createTerm(evaluate(expression.right).toString())
+            : expression.right
+    ) as Term<"number">;
 
-    const operatorsLeft = () => {
-        firstOperators = findOperators();
-        return firstOperators[2] !== null || firstOperators[1] !== null || firstOperators[0] !== null;
-    };
-
-    // handles an operation and mutates the list
-    const handleOperatorAt = (index: number) => {
-        const leftIndex = index - 1;
-        const operatorIndex = index;
-        const rightIndex = index + 1;
-
-        const left = list[leftIndex] ?? null;
-        const operator = list[index] as Term<"operator">;
-        const right = list[rightIndex] ?? null;
-
-        // an operator needs a value before and after it
-        if (!left || !right) throw new Error("Misconstructed expression. Couldn't evaluate.");
-
-        const leftValue = evaluate([left]);
-        const rightValue = evaluate([right]);
-
-        const result = getOperator(stringifyTerm(operator))!.operation(
-            createTerm(leftValue.toString()) as Term<"number">,
-            createTerm(rightValue.toString()) as Term<"number">
-        );
-        list[leftIndex] = result;
-        list.splice(operatorIndex, 2);
-    };
-
-    while (operatorsLeft()) {
-        if (firstOperators[2]) {
-            handleOperatorAt(firstOperators[2]);
-        } else if (firstOperators[1]) {
-            handleOperatorAt(firstOperators[1]);
-        } else if (firstOperators[0]) {
-            handleOperatorAt(firstOperators[0]);
-        }
-    }
-
-    return (list[0] as Term<"number">).data.value;
+    return (operators[expression.operator.data.name].operation(leftTerm, rightTerm) as Term<"number">)
+        .data.value;
 }
 
 /**
@@ -418,4 +366,19 @@ export function stringifyExpression(expression: TermList) {
     }
 
     return result;
+}
+
+export function isExpression(a: Expression | Term): a is Expression {
+    return a.hasOwnProperty("operator");
+}
+
+/**
+ * Checks if the given expression is the end of its branch, that's to say in other words
+ * if both its left and right properties refers to Term.s, and not Expression.s.
+ *
+ * @param expression the expression to check
+ * @returns true is this expression is the last of its branch, false otherwise
+ */
+export function isEndOfBranch(expression: Expression) {
+    return !isExpression(expression.left) && !isExpression(expression.right);
 }

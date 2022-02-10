@@ -14,6 +14,6 @@ e.compute.addEventListener("click", () => {
     // const abscissa = parseFloat(e.def.a.textContent || "1");
 
     const def = createExpression(textDef);
-
-    console.log(def);
+    
+    console.log(reduce(def));
 })

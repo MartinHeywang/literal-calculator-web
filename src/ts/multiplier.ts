@@ -39,6 +39,10 @@ export function stringifyMultiplier(multiplier: Multiplier) {
         }, "");
 }
 
+export function isMultiplierEmpty(multiplier: Multiplier) {
+    return Object.keys(multiplier).length === 0;
+}
+
 export function sameMultiplier(a: Multiplier, b: Multiplier) {
     return stringifyMultiplier(a) === stringifyMultiplier(b);
 }
@@ -49,8 +53,8 @@ export function mergeMultipliers(...multipliers: Multiplier[]) {
     multipliers.forEach(multiplier => {
         Object.keys(multiplier).forEach(key => {
             incrementFactor(result, key, multiplier[key]);
-        })
-    })
+        });
+    });
 
     return optimizeMultiplier(result);
 }
@@ -60,7 +64,7 @@ export function subtractMultipliers(a: Multiplier, b: Multiplier) {
 
     Object.keys(b).forEach(key => {
         decrementFactor(result, key, b[key]);
-    })
+    });
 
     return optimizeMultiplier(result);
 }
@@ -69,10 +73,10 @@ export function optimizeMultiplier(a: Multiplier) {
     Object.keys(a).forEach(key => {
         const value = a[key];
 
-        if(value > 0) return;
+        if (value > 0) return;
 
         delete a[key];
-    })
+    });
 
     return a;
 }

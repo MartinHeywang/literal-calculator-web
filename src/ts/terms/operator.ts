@@ -1,4 +1,4 @@
-import { evaluate, frozenExpression, isKnown } from "../expression";
+import { evaluate, Expression, frozenExpression, isExpression, isKnown } from "../expression";
 import { mergeMultipliers, sameMultiplier, setFactor, subtractMultipliers } from "../multiplier";
 import { createTerm, Term, stringifyTerm } from "./terms";
 
@@ -6,40 +6,42 @@ export const operators = {
     sum: {
         priority: 0,
         symbol: "+",
-        operation: (a: Term<"number">, b: Term<"number">) => {
-            const known = {
-                a: isKnown([a]),
-                b: isKnown([b]),
-                get both() {
-                    return this.a && this.b;
-                },
-            };
-
-            if (known.both) {
-                const values = {
-                    a: evaluate([a]),
-                    b: evaluate([b]),
-                };
-
-                return createTerm((values.a + values.b).toString());
+        operation: (a: Term<"number"> | Expression, b: Term<"number"> | Expression) => {
+            const terms = {
+                a: !isExpression(a),
+                b: !isExpression(b)
             }
 
-            // can't make the sum of, e.g 2x + 2y
-            // froze it!
-            if (!sameMultiplier(a.data.multiplier, b.data.multiplier)) return frozenExpression([a, createTerm("+"), b]);
+            if(terms.a && terms.b) {
 
-            const resultValue = a.data.value + b.data.value;
+                const aTerm = a as Term<"number">
+                const bTerm = b as Term<"number">
 
-            const result: Term<"number"> = {
-                type: "number",
+                if(sameMultiplier(aTerm.data.multiplier, bTerm.data.multiplier)) {
+                    const resultValue = aTerm.data.value + bTerm.data.value;
 
-                data: {
-                    value: resultValue,
-                    multiplier: a.data.multiplier,
-                },
-            };
+                    const resultTerm: Term<"number"> = {
+                        type: "number",
+                        data: {
+                            value: resultValue,
+                            multiplier: aTerm.data.multiplier
+                        }
+                    }
 
-            return result;
+                    return resultTerm;
+                }
+
+            }
+            
+            // TODO: explore the expressions
+
+            return {
+                left: a,
+                operator: createTerm<"operator">("+"),
+                right: b,
+
+                frozen: true
+            }
         },
     },
     difference: {
