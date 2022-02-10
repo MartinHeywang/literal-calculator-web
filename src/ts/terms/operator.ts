@@ -1,5 +1,5 @@
-import { evaluate, Expression, frozenExpression, isExpression, isKnown } from "../expression";
-import { mergeMultipliers, sameMultiplier, setFactor, subtractMultipliers } from "../multiplier";
+import { Expression, isExpression } from "../expression";
+import { mergeMultipliers, sameMultiplier, subtractMultipliers } from "../multiplier";
 import { createTerm, Term, stringifyTerm } from "./terms";
 
 export const operators = {
@@ -9,30 +9,28 @@ export const operators = {
         operation: (a: Term<"number"> | Expression, b: Term<"number"> | Expression) => {
             const terms = {
                 a: !isExpression(a),
-                b: !isExpression(b)
-            }
+                b: !isExpression(b),
+            };
 
-            if(terms.a && terms.b) {
+            if (terms.a && terms.b) {
+                const aTerm = a as Term<"number">;
+                const bTerm = b as Term<"number">;
 
-                const aTerm = a as Term<"number">
-                const bTerm = b as Term<"number">
-
-                if(sameMultiplier(aTerm.data.multiplier, bTerm.data.multiplier)) {
+                if (sameMultiplier(aTerm.data.multiplier, bTerm.data.multiplier)) {
                     const resultValue = aTerm.data.value + bTerm.data.value;
 
                     const resultTerm: Term<"number"> = {
                         type: "number",
                         data: {
                             value: resultValue,
-                            multiplier: aTerm.data.multiplier
-                        }
-                    }
+                            multiplier: aTerm.data.multiplier,
+                        },
+                    };
 
                     return resultTerm;
                 }
-
             }
-            
+
             // TODO: explore the expressions
 
             return {
@@ -40,114 +38,170 @@ export const operators = {
                 operator: createTerm<"operator">("+"),
                 right: b,
 
-                frozen: true
-            }
+                frozen: true,
+            };
         },
     },
     difference: {
         priority: 0,
         symbol: "-",
         operation: (a: Term<"number">, b: Term<"number">) => {
-            const known = {
-                a: isKnown([a]),
-                b: isKnown([b]),
-                get both() {
-                    return this.a && this.b;
-                },
+            const terms = {
+                a: !isExpression(a),
+                b: !isExpression(b),
             };
 
-            if (known.both) {
-                const values = {
-                    a: evaluate([a]),
-                    b: evaluate([b]),
-                };
+            if (terms.a && terms.b) {
+                const aTerm = a as Term<"number">;
+                const bTerm = b as Term<"number">;
 
-                return createTerm((values.a - values.b).toString());
+                if (sameMultiplier(aTerm.data.multiplier, bTerm.data.multiplier)) {
+                    const resultValue = aTerm.data.value - bTerm.data.value;
+
+                    const resultTerm: Term<"number"> = {
+                        type: "number",
+                        data: {
+                            value: resultValue,
+                            multiplier: aTerm.data.multiplier,
+                        },
+                    };
+
+                    return resultTerm;
+                }
             }
 
-            // can't make the sum of, e.g "2x - 2y"
-            // froze it!
-            if (!sameMultiplier(a.data.multiplier, b.data.multiplier)) return frozenExpression([a, createTerm("-") ,b]);
+            // TODO: explore the expressions
 
-            const resultValue = a.data.value - b.data.value;
+            return {
+                left: a,
+                operator: createTerm<"operator">("-"),
+                right: b,
 
-            const result: Term<"number"> = {
-                type: "number",
-
-                data: {
-                    value: resultValue,
-                    multiplier: a.data.multiplier,
-                },
+                frozen: true,
             };
-
-            return result;
         },
     },
     product: {
         priority: 1,
         symbol: "*",
-        operation: (a: Term<"number">, b: Term<"number">) => {
-            const numericalValue = a.data.value * b.data.value;
+        operation: (a: Term<"number"> | Expression, b: Term<"number"> | Expression) => {
+            const terms = {
+                a: !isExpression(a),
+                b: !isExpression(b),
+            };
 
-            const multiplier = mergeMultipliers(a.data.multiplier, b.data.multiplier);
+            if (terms.a && terms.b) {
+                const aTerm = a as Term<"number">;
+                const bTerm = b as Term<"number">;
 
-            const result: Term<"number"> = {
-                type: "number",
+                if (sameMultiplier(aTerm.data.multiplier, bTerm.data.multiplier)) {
+                    const resultValue = aTerm.data.value * bTerm.data.value;
 
-                data: {
-                    value: numericalValue,
-                    multiplier
+                    const resultTerm: Term<"number"> = {
+                        type: "number",
+                        data: {
+                            value: resultValue,
+                            multiplier: mergeMultipliers(aTerm.data.multiplier, bTerm.data.multiplier),
+                        },
+                    };
+
+                    return resultTerm;
                 }
             }
 
-            return result;
+            // TODO: explore the expressions
+
+            return {
+                left: a,
+                operator: createTerm<"operator">("*"),
+                right: b,
+
+                frozen: true,
+            };
         },
     },
     quotient: {
         priority: 1,
         symbol: "/",
         operation: (a: Term<"number">, b: Term<"number">) => {
-            if(b.data.value === 0) throw new Error("Can't divide term by 0");
-            
-            const numericalValue = a.data.value / b.data.value;
-
-            const multiplier = subtractMultipliers(a.data.multiplier, b.data.multiplier);
-
-            const result: Term<"number"> = {
-                type: "number",
-
-                data: {
-                    value: numericalValue,
-                    multiplier,
-                },
+            const terms = {
+                a: !isExpression(a),
+                b: !isExpression(b),
             };
 
-            return result;
+            if (terms.a && terms.b) {
+                const aTerm = a as Term<"number">;
+                const bTerm = b as Term<"number">;
+
+                if (sameMultiplier(aTerm.data.multiplier, bTerm.data.multiplier)) {
+                    const resultValue = aTerm.data.value / bTerm.data.value;
+
+                    const resultTerm: Term<"number"> = {
+                        type: "number",
+                        data: {
+                            value: resultValue,
+                            multiplier: subtractMultipliers(
+                                aTerm.data.multiplier,
+                                bTerm.data.multiplier
+                            ),
+                        },
+                    };
+
+                    return resultTerm;
+                }
+            }
+
+            // TODO: explore the expressions
+
+            return {
+                left: a,
+                operator: createTerm<"operator">("/"),
+                right: b,
+
+                frozen: true,
+            };
         },
     },
     power: {
         priority: 2,
         symbol: "^",
-        operation: (raised: Term<"number">, power: Term<"number">) => {
-            const known = {
-                raised: isKnown([raised]),
-                power: isKnown([power]),
-                get both() {
-                    return this.raised && this.power
+        operation: (a: Term<"number"> | Expression, b: Term<"number"> | Expression) => {
+            const terms = {
+                a: !isExpression(a),
+                b: !isExpression(b),
+            };
+
+            if (terms.a && terms.b) {
+                const aTerm = a as Term<"number">;
+                const bTerm = b as Term<"number">;
+
+                if (sameMultiplier(aTerm.data.multiplier, bTerm.data.multiplier)) {
+                    const resultValue = aTerm.data.value / bTerm.data.value;
+
+                    const resultTerm: Term<"number"> = {
+                        type: "number",
+                        data: {
+                            value: resultValue,
+                            multiplier: subtractMultipliers(
+                                aTerm.data.multiplier,
+                                bTerm.data.multiplier
+                            ),
+                        },
+                    };
+
+                    return resultTerm;
                 }
             }
 
-            if(!known.power) {
-                return frozenExpression([raised, createTerm("^"), power]);
-            }
-            if(!known.raised) {
-                const powerValue = evaluate([power]);
+            // TODO: explore the expressions
 
-                setFactor(raised.data.multiplier, stringifyTerm(raised), powerValue);
-                return raised;
-            }
+            return {
+                left: a,
+                operator: createTerm<"operator">("/"),
+                right: b,
 
-            return createTerm(Math.pow(raised.data.value, power.data.value).toString());
+                frozen: true,
+            };
         },
     },
 };
@@ -183,11 +237,11 @@ export function getOperatorName(symbol: string) {
     const keys = Object.keys(operators);
 
     return (
-        keys.find(key => {
+        (keys.find(key => {
             const operator = operators[key as OperatorName];
 
             return operator.symbol === symbol;
-        }) as OperatorName ?? null
+        }) as OperatorName) ?? null
     );
 }
 
