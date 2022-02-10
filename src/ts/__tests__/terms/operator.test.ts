@@ -1,5 +1,7 @@
 import { isOperator, operators } from "../../terms/operator";
-import { createTerm, Term } from "../../terms/terms";
+import { createTerm } from "../../terms/terms";
+
+import { Number } from "../../terms/number";
 
 describe("is operator", () => {
     test("plus", () => {
@@ -60,8 +62,8 @@ describe("is operator", () => {
 describe("operations", () => {
     describe("sum", () => {
         test("all known", () => {
-            const left = createTerm("8") as Term<"number">;
-            const right = createTerm("367") as Term<"number">;
+            const left = createTerm<Number>("8");
+            const right = createTerm<Number>("367");
 
             const output = operators.sum.operation(left, right);
 
@@ -69,8 +71,8 @@ describe("operations", () => {
         });
 
         test("unknown, same multiplier", () => {
-            const left = createTerm("8x") as Term<"number">;
-            const right = createTerm("367x") as Term<"number">;
+            const left = createTerm<Number>("8x");
+            const right = createTerm<Number>("367x");
 
             const output = operators.sum.operation(left, right);
 
@@ -78,8 +80,8 @@ describe("operations", () => {
         });
 
         test("unknown, different multiplier", () => {
-            const left = createTerm("8x") as Term<"number">;
-            const right = createTerm("367y") as Term<"number">;
+            const left = createTerm<Number>("8x");
+            const right = createTerm<Number>("367y");
 
             const output = operators.sum.operation(left, right);
 
@@ -89,8 +91,8 @@ describe("operations", () => {
 
     describe("difference", () => {
         test("all known", () => {
-            const left = createTerm("8") as Term<"number">;
-            const right = createTerm("48") as Term<"number">;
+            const left = createTerm<Number>("8");
+            const right = createTerm<Number>("48");
 
             const output = operators.difference.operation(left, right);
 
@@ -98,8 +100,8 @@ describe("operations", () => {
         });
 
         test("unknown, same multiplier", () => {
-            const left = createTerm("8x") as Term<"number">;
-            const right = createTerm("367x") as Term<"number">;
+            const left = createTerm<Number>("8x");
+            const right = createTerm<Number>("367x");
 
             const output = operators.difference.operation(left, right);
 
@@ -107,8 +109,8 @@ describe("operations", () => {
         });
 
         test("unknown, different multiplier", () => {
-            const left = createTerm("8x") as Term<"number">;
-            const right = createTerm("367y") as Term<"number">;
+            const left = createTerm<Number>("8x");
+            const right = createTerm<Number>("367y");
 
             const output = operators.difference.operation(left, right);
 
@@ -118,8 +120,8 @@ describe("operations", () => {
 
     describe("product", () => {
         test("all known", () => {
-            const left = createTerm("8") as Term<"number">;
-            const right = createTerm("6") as Term<"number">;
+            const left = createTerm<Number>("8");
+            const right = createTerm<Number>("6");
 
             const output = operators.product.operation(left, right);
 
@@ -127,20 +129,20 @@ describe("operations", () => {
         });
 
         test("unknown, same multiplier", () => {
-            const left = createTerm("8x") as Term<"number">;
-            const right = createTerm("6x") as Term<"number">;
+            const left = createTerm<Number>("8x");
+            const right = createTerm<Number>("6x");
 
             const output = operators.product.operation(left, right);
 
-            const expected = createTerm("48") as Term<"number">;
+            const expected = createTerm<Number>("48");
             expected.data.multiplier["x"] = 2;
 
             expect(output).toStrictEqual(expected);
         });
 
         test("unknown, different multiplier", () => {
-            const left = createTerm("8x") as Term<"number">;
-            const right = createTerm("6y") as Term<"number">;
+            const left = createTerm<Number>("8x");
+            const right = createTerm<Number>("6y");
 
             const output = operators.product.operation(left, right);
 
@@ -150,8 +152,8 @@ describe("operations", () => {
 
     describe("quotient", () => {
         test("all known", () => {
-            const left = createTerm("8") as Term<"number">;
-            const right = createTerm("2") as Term<"number">;
+            const left = createTerm<Number>("8");
+            const right = createTerm<Number>("2");
 
             const output = operators.quotient.operation(left, right);
 
@@ -159,8 +161,8 @@ describe("operations", () => {
         });
 
         test("unknown, different multiplier", () => {
-            const left = createTerm("8x") as Term<"number">;
-            const right = createTerm("2") as Term<"number">;
+            const left = createTerm<Number>("8x");
+            const right = createTerm<Number>("2");
 
             const output = operators.quotient.operation(left, right);
 
@@ -168,8 +170,8 @@ describe("operations", () => {
         });
 
         test("unknown, same multiplier", () => {
-            const left = createTerm("8x") as Term<"number">;
-            const right = createTerm("2x") as Term<"number">;
+            const left = createTerm<Number>("8x");
+            const right = createTerm<Number>("2x");
 
             const output = operators.quotient.operation(left, right);
 
@@ -177,8 +179,8 @@ describe("operations", () => {
         });
 
         test("unknown, division by zero", () => {
-            const left = createTerm("8x") as Term<"number">;
-            const right = createTerm("0") as Term<"number">;
+            const left = createTerm<Number>("8x");
+            const right = createTerm<Number>("0");
 
             expect(() => {
                 operators.quotient.operation(left, right);

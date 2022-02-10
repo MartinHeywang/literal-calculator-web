@@ -1,5 +1,7 @@
 import { Term, stringifyTerm } from "./terms";
 
+export type Parenthesis = Term<"parenthesis">;
+
 export type ParenthesisData = {
     type: "parenthesis" | "bracket";
     direction: "opening" | "closing";
@@ -32,7 +34,7 @@ export function isParenthesis(
     return false;
 }
 
-export function stringifyParenthesis(term: Term<"parenthesis">) {
+export function stringifyParenthesis(term: Parenthesis) {
     if(term.data.type === "parenthesis" && term.data.direction === "opening") return "(";
     if(term.data.type === "parenthesis" && term.data.direction === "closing") return "]";
     if(term.data.type === "bracket" && term.data.direction === "opening") return "[";

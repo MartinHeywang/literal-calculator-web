@@ -1,25 +1,28 @@
-import { Expression, isExpression } from "../expression";
+import { isOperation, Expression } from "../expression";
 import { mergeMultipliers, sameMultiplier, subtractMultipliers } from "../multiplier";
 import { createTerm, Term, stringifyTerm } from "./terms";
+import { Number } from "./number";
+
+export type Operator = Term<"operator">;
 
 export const operators = {
     sum: {
         priority: 0,
         symbol: "+",
-        operation: (a: Term<"number"> | Expression, b: Term<"number"> | Expression) => {
+        operation: (a: Expression, b: Expression) => {
             const terms = {
-                a: !isExpression(a),
-                b: !isExpression(b),
+                a: !isOperation(a),
+                b: !isOperation(b),
             };
 
             if (terms.a && terms.b) {
-                const aTerm = a as Term<"number">;
-                const bTerm = b as Term<"number">;
+                const aTerm = a as Number;
+                const bTerm = b as Number;
 
                 if (sameMultiplier(aTerm.data.multiplier, bTerm.data.multiplier)) {
                     const resultValue = aTerm.data.value + bTerm.data.value;
 
-                    const resultTerm: Term<"number"> = {
+                    const resultTerm: Number = {
                         type: "number",
                         data: {
                             value: resultValue,
@@ -35,7 +38,7 @@ export const operators = {
 
             return {
                 left: a,
-                operator: createTerm<"operator">("+"),
+                operator: createTerm<Operator>("+"),
                 right: b,
 
                 frozen: true,
@@ -45,20 +48,20 @@ export const operators = {
     difference: {
         priority: 0,
         symbol: "-",
-        operation: (a: Term<"number">, b: Term<"number">) => {
+        operation: (a: Expression, b: Expression) => {
             const terms = {
-                a: !isExpression(a),
-                b: !isExpression(b),
+                a: !isOperation(a),
+                b: !isOperation(b),
             };
 
             if (terms.a && terms.b) {
-                const aTerm = a as Term<"number">;
-                const bTerm = b as Term<"number">;
+                const aTerm = a as Number;
+                const bTerm = b as Number;
 
                 if (sameMultiplier(aTerm.data.multiplier, bTerm.data.multiplier)) {
                     const resultValue = aTerm.data.value - bTerm.data.value;
 
-                    const resultTerm: Term<"number"> = {
+                    const resultTerm: Number = {
                         type: "number",
                         data: {
                             value: resultValue,
@@ -74,7 +77,7 @@ export const operators = {
 
             return {
                 left: a,
-                operator: createTerm<"operator">("-"),
+                operator: createTerm<Operator>("-"),
                 right: b,
 
                 frozen: true,
@@ -84,20 +87,20 @@ export const operators = {
     product: {
         priority: 1,
         symbol: "*",
-        operation: (a: Term<"number"> | Expression, b: Term<"number"> | Expression) => {
+        operation: (a: Expression, b: Expression) => {
             const terms = {
-                a: !isExpression(a),
-                b: !isExpression(b),
+                a: !isOperation(a),
+                b: !isOperation(b),
             };
 
             if (terms.a && terms.b) {
-                const aTerm = a as Term<"number">;
-                const bTerm = b as Term<"number">;
+                const aTerm = a as Number;
+                const bTerm = b as Number;
 
                 if (sameMultiplier(aTerm.data.multiplier, bTerm.data.multiplier)) {
                     const resultValue = aTerm.data.value * bTerm.data.value;
 
-                    const resultTerm: Term<"number"> = {
+                    const resultTerm: Number = {
                         type: "number",
                         data: {
                             value: resultValue,
@@ -113,7 +116,7 @@ export const operators = {
 
             return {
                 left: a,
-                operator: createTerm<"operator">("*"),
+                operator: createTerm<Operator>("*"),
                 right: b,
 
                 frozen: true,
@@ -123,20 +126,20 @@ export const operators = {
     quotient: {
         priority: 1,
         symbol: "/",
-        operation: (a: Term<"number">, b: Term<"number">) => {
+        operation: (a: Expression, b: Expression) => {
             const terms = {
-                a: !isExpression(a),
-                b: !isExpression(b),
+                a: !isOperation(a),
+                b: !isOperation(b),
             };
 
             if (terms.a && terms.b) {
-                const aTerm = a as Term<"number">;
-                const bTerm = b as Term<"number">;
+                const aTerm = a as Number;
+                const bTerm = b as Number;
 
                 if (sameMultiplier(aTerm.data.multiplier, bTerm.data.multiplier)) {
                     const resultValue = aTerm.data.value / bTerm.data.value;
 
-                    const resultTerm: Term<"number"> = {
+                    const resultTerm: Number = {
                         type: "number",
                         data: {
                             value: resultValue,
@@ -155,7 +158,7 @@ export const operators = {
 
             return {
                 left: a,
-                operator: createTerm<"operator">("/"),
+                operator: createTerm<Operator>("/"),
                 right: b,
 
                 frozen: true,
@@ -165,20 +168,20 @@ export const operators = {
     power: {
         priority: 2,
         symbol: "^",
-        operation: (a: Term<"number"> | Expression, b: Term<"number"> | Expression) => {
+        operation: (a: Expression, b: Expression) => {
             const terms = {
-                a: !isExpression(a),
-                b: !isExpression(b),
+                a: !isOperation(a),
+                b: !isOperation(b),
             };
 
             if (terms.a && terms.b) {
-                const aTerm = a as Term<"number">;
-                const bTerm = b as Term<"number">;
+                const aTerm = a as Number;
+                const bTerm = b as Number;
 
                 if (sameMultiplier(aTerm.data.multiplier, bTerm.data.multiplier)) {
                     const resultValue = aTerm.data.value / bTerm.data.value;
 
-                    const resultTerm: Term<"number"> = {
+                    const resultTerm: Number = {
                         type: "number",
                         data: {
                             value: resultValue,
@@ -197,7 +200,7 @@ export const operators = {
 
             return {
                 left: a,
-                operator: createTerm<"operator">("/"),
+                operator: createTerm<Operator>("/"),
                 right: b,
 
                 frozen: true,
@@ -263,6 +266,6 @@ export function getOperatorPriority(symbol: string) {
     return operators[key].priority;
 }
 
-export function stringifyOperator(term: Term<"operator">) {
+export function stringifyOperator(term: Operator) {
     return `${operators[term.data.name].symbol}`;
 }

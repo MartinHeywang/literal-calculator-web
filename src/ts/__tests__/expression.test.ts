@@ -54,7 +54,7 @@ describe("handle powers", () => {
 
         let expected = createExpression(base);
         // make the expected edits
-        (expected[2] as Term<"number">).data.multiplier = { x: 2 };
+        (expected[2] as Number).data.multiplier = { x: 2 };
         expected.splice(3, 2);
 
         expect(output).toStrictEqual(expected);

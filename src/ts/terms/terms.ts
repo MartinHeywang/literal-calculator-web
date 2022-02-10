@@ -1,6 +1,6 @@
-import { extractMultiplier, extractValue, isNumber, NumberData, stringifyNumber } from "./number";
-import { getOperatorName, getOperatorPriority, isOperator, OperatorData, stringifyOperator } from "./operator";
-import { isParenthesis, ParenthesisData, stringifyParenthesis } from "./parenthesis";
+import { extractMultiplier, extractValue, isNumber, NumberData, stringifyNumber, Number } from "./number";
+import { getOperatorName, getOperatorPriority, isOperator, Operator, OperatorData, stringifyOperator } from "./operator";
+import { isParenthesis, Parenthesis, ParenthesisData, stringifyParenthesis } from "./parenthesis";
 
 export type TermType = "number" | "operator" | "parenthesis";
 
@@ -16,9 +16,9 @@ export type Term<T extends TermType = TermType> = {
     ;
 };
 
-export function createTerm<T extends TermType>(text: string): Term<T> {
+export function createTerm<T extends Term>(text: string): T {
     if (isParenthesis(text)) {
-        const data: Term<"parenthesis"> = {
+        const data: Parenthesis = {
             type: "parenthesis",
 
             data: {
@@ -27,9 +27,10 @@ export function createTerm<T extends TermType>(text: string): Term<T> {
             },
         };
 
-        return data as Term<T>;
+        // @ts-ignore
+        return data;
     } else if (isOperator(text)) {
-        const data: Term<"operator"> = {
+        const data: Operator = {
             type: "operator",
             
             data: {
@@ -37,9 +38,11 @@ export function createTerm<T extends TermType>(text: string): Term<T> {
                 priority: getOperatorPriority(text)!,
             },
         };
-        return data as Term<T>;
+
+        // @ts-ignore
+        return data;
     } else if (isNumber(text)) {
-        const data: Term<"number"> = {
+        const data: Number = {
             type: "number",
 
             data: {
@@ -47,6 +50,8 @@ export function createTerm<T extends TermType>(text: string): Term<T> {
                 multiplier: extractMultiplier(text) || {},
             },
         };
+
+        // @ts-ignore
         return data as Term<T>;
     } else {
         throw new Error(`The text '${text}' could not be recognized as a term.`);
@@ -56,13 +61,13 @@ export function createTerm<T extends TermType>(text: string): Term<T> {
 
 export function stringifyTerm(term: Term) {
     if (term.type === "number") {
-        return stringifyNumber(term as Term<"number">);
+        return stringifyNumber(term as Number);
     }
     if (term.type === "operator") {
-        return stringifyOperator(term as Term<"operator">);
+        return stringifyOperator(term as Operator);
     }
     if (term.type === "parenthesis") {
-        return stringifyParenthesis(term as Term<"parenthesis">);
+        return stringifyParenthesis(term as Parenthesis);
     }
 
     throw new Error("Can't stringify term of an unknown type.");

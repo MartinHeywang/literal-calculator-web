@@ -1,6 +1,8 @@
 import { createMultiplierObject, incrementFactor, Multiplier, stringifyMultiplier } from "../multiplier";
 import { Term, stringifyTerm, createTerm } from "./terms";
 
+export type Number = Term<"number">;
+
 export type NumberData = {
     value: number;
     multiplier: Multiplier;
@@ -90,10 +92,10 @@ export function extractMultiplier(term: string) {
     return multiplier;
 }
 
-export function stringifyNumber(term: Term<"number">) {
+export function stringifyNumber(term: Number) {
     return `${term.data.value !== 1 ? term.data.value : ""}${stringifyMultiplier(term.data.multiplier)}`;
 }
 
 export function parseValueToTerm(value: number) {
-    return createTerm(value.toString()) as Term<"number">;
+    return createTerm<Number>(value.toString());
 }

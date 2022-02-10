@@ -1,4 +1,7 @@
-import { createTerm, Term } from "../../terms/terms";
+import { createTerm } from "../../terms/terms";
+import { Number } from "../../terms/number";
+import { Operator } from "../../terms/operator";
+import { Parenthesis } from "../../terms/parenthesis";
 
 describe("create-term", () => {
     test("digit", () => {
@@ -6,16 +9,16 @@ describe("create-term", () => {
 
         const output = createTerm(input);
 
-        const expected: Term<"number"> = {
+        const expected: Number = {
             type: "number",
 
             data: {
                 value: -2,
-                multiplier: {}
-            }
-        }
+                multiplier: {},
+            },
+        };
 
-        expect(output).toStrictEqual(expected)
+        expect(output).toStrictEqual(expected);
     });
 
     test("letter", () => {
@@ -23,18 +26,18 @@ describe("create-term", () => {
 
         const output = createTerm(input);
 
-        const expected: Term<"number"> = {
+        const expected: Number = {
             type: "number",
 
             data: {
                 value: -1,
                 multiplier: {
-                    x: 1
-                }
-            }
-        }
+                    x: 1,
+                },
+            },
+        };
 
-        expect(output).toStrictEqual(expected)
+        expect(output).toStrictEqual(expected);
     });
 
     test("operator", () => {
@@ -42,16 +45,16 @@ describe("create-term", () => {
 
         const output = createTerm(input);
 
-        const expected: Term<"operator"> = {
+        const expected: Operator = {
             type: "operator",
 
             data: {
                 priority: 1,
-                name: "product"
-            }
-        }
+                name: "product",
+            },
+        };
 
-        expect(output).toStrictEqual(expected)
+        expect(output).toStrictEqual(expected);
     });
 
     test("parentheses", () => {
@@ -59,23 +62,23 @@ describe("create-term", () => {
 
         const output = createTerm(input);
 
-        const expected: Term<"parenthesis"> = {
+        const expected: Parenthesis = {
             type: "parenthesis",
 
             data: {
                 direction: "opening",
-                type: "bracket"
-            }
-        }
+                type: "bracket",
+            },
+        };
 
-        expect(output).toStrictEqual(expected)
+        expect(output).toStrictEqual(expected);
     });
 
     test("invalid", () => {
         const input = "3xa-";
 
         expect(() => {
-            console.log(createTerm(input))
+            createTerm(input);
         }).toThrow(input); // means that the error message should contain the input string
     });
 });
