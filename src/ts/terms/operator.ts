@@ -1,7 +1,7 @@
 import { isOperation, Expression, isKnown, evaluate } from "../expression";
 import { incrementFactor, mergeMultipliers, sameMultiplier, subtractMultipliers } from "../multiplier";
 import { createTerm, Term, stringifyTerm } from "./terms";
-import { Number, stringifyNumber } from "./number";
+import { Number, oppositeTerm, stringifyNumber } from "./number";
 
 export type Operator = Term<"operator">;
 
@@ -41,7 +41,7 @@ export const operators = {
                 operator: createTerm<Operator>("+"),
                 right: b,
 
-                frozen: true,
+                impossible: true,
             };
         },
     },
@@ -55,32 +55,15 @@ export const operators = {
             };
 
             if (terms.a && terms.b) {
-                const aTerm = a as Number;
-                const bTerm = b as Number;
-
-                if (sameMultiplier(aTerm.data.multiplier, bTerm.data.multiplier)) {
-                    const resultValue = aTerm.data.value - bTerm.data.value;
-
-                    const resultTerm: Number = {
-                        type: "number",
-                        data: {
-                            value: resultValue,
-                            multiplier: aTerm.data.multiplier,
-                        },
-                    };
-
-                    return resultTerm;
-                }
+                return operators.sum.operation(a as Number, oppositeTerm(b as Number));
             }
-
-            // TODO: explore the expressions
 
             return {
                 left: a,
                 operator: createTerm<Operator>("-"),
                 right: b,
 
-                frozen: true,
+                impossible: true,
             };
         },
     },
@@ -117,7 +100,7 @@ export const operators = {
                 operator: createTerm<Operator>("*"),
                 right: b,
 
-                frozen: true,
+                impossible: true,
             };
         },
     },
@@ -159,7 +142,7 @@ export const operators = {
                 operator: createTerm<Operator>("/"),
                 right: b,
 
-                frozen: true,
+                impossible: true,
             };
         },
     },
@@ -192,7 +175,7 @@ export const operators = {
                 }
 
                 // compacts numbers -> x^2 for example
-                if(isKnown(bTerm)) {
+                if (isKnown(bTerm)) {
                     incrementFactor(
                         aTerm.data.multiplier,
 

@@ -5,8 +5,14 @@ import { operators, Operator, stringifyOperator, getOperator } from "./terms/ope
 import { createTerm, stringifyTerm } from "./terms/terms";
 import { regexCheck, parenthesesCheck, orderCheck } from "./verify";
 
+/**
+ * An Expression represents a mathematical expression. Under the hood, it is either an operation or a number.
+ */
 export type Expression = Operation | Number;
 
+/**
+ * An Operation is a small part from an expression. It joins two expressions with a given operator.
+ */
 export type Operation = {
     left: Expression;
     operator: Operator;
@@ -16,6 +22,12 @@ export type Operation = {
     impossible?: boolean;
 };
 
+/**
+ * Creates an expression based on the given string.
+ * 
+ * @param text the input text
+ * @returns the new expression
+ */
 export function createExpression(text: string) {
     const minified = minify(text);
 
@@ -96,10 +108,16 @@ export function stringifyExpression(expression: Expression) {
     }`;
 
     console.groupEnd();
-
+    
     return result;
 }
 
+/**
+ * Reduces the given expression. May mutate the object and returns it.
+ * 
+ * @param expression the expression to reduce
+ * @returns the reduced expression
+ */
 export function reduce(expression: Expression): Expression {
     if (!isOperation(expression)) return expression;
 
@@ -149,4 +167,28 @@ export function evaluate(element: Expression): number {
  */
 export function isOperation(expression: Expression): expression is Operation {
     return expression.hasOwnProperty("operator");
+}
+
+/**
+ * Checks if the given expression is a sum (or a difference)
+ * 
+ * @param expression the expression to check
+ * @returns true if the expression is a sum, false otherwise
+ */
+export function isSum(expression: Expression) {
+    if(!isOperation(expression)) return false;
+
+    return expression.operator.data.name === "sum" || expression.operator.data.name === "difference";
+}
+
+/**
+ * Checks if the given expression is a product (or a quotient)
+ * 
+ * @param expression the expression to check
+ * @returns true if the expression is a product, false otherwise
+ */
+export function isProduct(expression: Expression) {
+    if(!isOperation(expression)) return false;
+
+    return expression.operator.data.name === "product" || expression.operator.data.name === "quotient";
 }
