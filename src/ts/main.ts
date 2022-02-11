@@ -1,4 +1,4 @@
-import { createExpression, reduce } from "./expression";
+import { createExpression, reduce, stringifyExpression } from "./expression";
 
 // "e" is a shorthand for elements
 const e = {
@@ -15,5 +15,5 @@ e.compute.addEventListener("click", () => {
 
     const def = createExpression(textDef);
     
-    console.log(reduce(def));
+    console.log(stringifyExpression(reduce(def)));
 })

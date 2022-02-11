@@ -1,8 +1,8 @@
 import { minify, list, arrange, transform } from "./format";
 import { incrementFactor, isMultiplierEmpty, mergeMultipliers } from "./multiplier";
 import { parseValueToTerm, stringifyNumber, Number } from "./terms/number";
-import { operators, Operator } from "./terms/operator";
-import { createTerm, Term } from "./terms/terms";
+import { operators, Operator, stringifyOperator } from "./terms/operator";
+import { createTerm, stringifyTerm } from "./terms/terms";
 import { regexCheck, parenthesesCheck, orderCheck } from "./verify";
 
 export type Expression = Operation | Number;
@@ -60,11 +60,51 @@ export function isKnown(expression: Expression): boolean {
     );
 }
 
+/**
+ * Stringifies the given expression in a human-readable way.
+ *
+ * @param expression the expression to stringify
+ * @returns the human-readable string for the expression
+ */
+export function stringifyExpression(expression: Expression) {
+    if (!isOperation(expression)) return stringifyTerm(expression);
+
+    const areOperations = {
+        left: isOperation(expression.left),
+        right: isOperation(expression.right),
+    };
+
+    const priorities = {
+        left: areOperations.left ? (expression.left as Operation).operator.data.priority : null,
+        thisOperation: expression.operator.data.priority,
+        right: areOperations.right ? (expression.right as Operation).operator.data.priority : null,
+    };
+
+    const addParenthesesOn = {
+        left: priorities.left === null ? false : priorities.left < priorities.thisOperation,
+        right: priorities.right === null ? false : priorities.right < priorities.thisOperation,
+    };
+
+    let result = "";
+
+    result += `${addParenthesesOn.left ? "(" : ""}${stringifyExpression(expression.left)}${
+        addParenthesesOn.left ? ")" : ""
+    }`;
+    result += ` ${stringifyOperator(expression.operator)} `;
+    result += `${addParenthesesOn.right ? "(" : ""}${stringifyExpression(expression.right)}${
+        addParenthesesOn.right ? ")" : ""
+    }`;
+
+    console.groupEnd();
+
+    return result;
+}
+
 export function reduce(expression: Expression) {
     // a term can't be reduced
     if (!isOperation(expression)) return expression;
 
-    let result: Operation | Term = expression;
+    let result: Expression = expression;
     result = handleKnown(expression);
     result = reduceSimplePowers(expression);
     result = reduceSimpleMultiplications(expression);
@@ -101,7 +141,11 @@ function reduceSimplePowers(expression: Expression): Expression {
         !isOperation(expression.left) &&
         isKnown(expression.right)
     ) {
-        incrementFactor(expression.left.data.multiplier, stringifyNumber(expression.left), evaluate(expression.right) - 1);
+        incrementFactor(
+            expression.left.data.multiplier,
+            stringifyNumber(expression.left),
+            evaluate(expression.right) - 1
+        );
 
         return expression.left;
     }
@@ -167,13 +211,13 @@ export function evaluate(element: Expression): number {
             : expression.right
     ) as Number;
 
-    return (operators[expression.operator.data.name].operation(leftTerm, rightTerm) as Number)
-        .data.value;
+    return (operators[expression.operator.data.name].operation(leftTerm, rightTerm) as Number).data
+        .value;
 }
 
 /**
  * Checks if the given expression is, at its root, an operation.
- * 
+ *
  * @param expression the expression to check
  * @returns true if the expression is an operation, false otherwise
  */
