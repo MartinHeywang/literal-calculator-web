@@ -1,7 +1,7 @@
-import { isOperation, Expression } from "../expression";
-import { mergeMultipliers, sameMultiplier, subtractMultipliers } from "../multiplier";
+import { isOperation, Expression, isKnown, evaluate } from "../expression";
+import { incrementFactor, mergeMultipliers, sameMultiplier, subtractMultipliers } from "../multiplier";
 import { createTerm, Term, stringifyTerm } from "./terms";
-import { Number } from "./number";
+import { Number, stringifyNumber } from "./number";
 
 export type Operator = Term<"operator">;
 
@@ -97,19 +97,17 @@ export const operators = {
                 const aTerm = a as Number;
                 const bTerm = b as Number;
 
-                if (sameMultiplier(aTerm.data.multiplier, bTerm.data.multiplier)) {
-                    const resultValue = aTerm.data.value * bTerm.data.value;
+                const resultValue = aTerm.data.value * bTerm.data.value;
 
-                    const resultTerm: Number = {
-                        type: "number",
-                        data: {
-                            value: resultValue,
-                            multiplier: mergeMultipliers(aTerm.data.multiplier, bTerm.data.multiplier),
-                        },
-                    };
+                const resultTerm: Number = {
+                    type: "number",
+                    data: {
+                        value: resultValue,
+                        multiplier: mergeMultipliers(aTerm.data.multiplier, bTerm.data.multiplier),
+                    },
+                };
 
-                    return resultTerm;
-                }
+                return resultTerm;
             }
 
             // TODO: explore the expressions
@@ -178,21 +176,36 @@ export const operators = {
                 const aTerm = a as Number;
                 const bTerm = b as Number;
 
-                if (sameMultiplier(aTerm.data.multiplier, bTerm.data.multiplier)) {
-                    const resultValue = aTerm.data.value / bTerm.data.value;
+                // simplest case -> 2^5 for example
+                if (isKnown(aTerm) && isKnown(bTerm)) {
+                    const resultValue = Math.pow(aTerm.data.value, bTerm.data.value);
 
                     const resultTerm: Number = {
                         type: "number",
                         data: {
                             value: resultValue,
-                            multiplier: subtractMultipliers(
-                                aTerm.data.multiplier,
-                                bTerm.data.multiplier
-                            ),
+                            multiplier: {},
                         },
                     };
 
                     return resultTerm;
+                }
+
+                // compacts numbers -> x^2 for example
+                if(isKnown(bTerm)) {
+                    incrementFactor(
+                        aTerm.data.multiplier,
+
+                        // hey! we could think that the result of "stringifyNumber" may start with a number (e.g. "2x")
+                        // but, when parsing, letters and numbers are separated
+                        // and, because powers are always calculated first
+                        // this will never happen
+                        // conclusion: this is safe
+                        stringifyNumber(aTerm),
+                        evaluate(bTerm) - 1
+                    );
+
+                    return aTerm;
                 }
             }
 
@@ -200,7 +213,7 @@ export const operators = {
 
             return {
                 left: a,
-                operator: createTerm<Operator>("/"),
+                operator: createTerm<Operator>("^"),
                 right: b,
 
                 frozen: true,

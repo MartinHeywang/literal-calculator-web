@@ -1,7 +1,7 @@
 import { minify, list, arrange, transform } from "./format";
-import { incrementFactor, isMultiplierEmpty, mergeMultipliers } from "./multiplier";
-import { parseValueToTerm, stringifyNumber, Number } from "./terms/number";
-import { operators, Operator, stringifyOperator } from "./terms/operator";
+import { isMultiplierEmpty } from "./multiplier";
+import { Number } from "./terms/number";
+import { operators, Operator, stringifyOperator, getOperator } from "./terms/operator";
 import { createTerm, stringifyTerm } from "./terms/terms";
 import { regexCheck, parenthesesCheck, orderCheck } from "./verify";
 
@@ -100,87 +100,13 @@ export function stringifyExpression(expression: Expression) {
     return result;
 }
 
-export function reduce(expression: Expression) {
-    // a term can't be reduced
+export function reduce(expression: Expression): Expression {
     if (!isOperation(expression)) return expression;
 
-    let result: Expression = expression;
-    result = handleKnown(expression);
-    result = reduceSimplePowers(expression);
-    result = reduceSimpleMultiplications(expression);
+    const reducedLeft = reduce(expression.left);
+    const reducedRight = reduce(expression.right);
 
-    return result;
-}
-
-function handleKnown(expression: Expression) {
-    if (!isOperation(expression)) return expression;
-
-    if (!isKnown(expression)) {
-        // the whole expression is not known, search deeper
-
-        if (isOperation(expression.left)) handleKnown(expression.left);
-        if (isOperation(expression.right)) handleKnown(expression.right);
-
-        return expression;
-    }
-
-    expression = parseValueToTerm(evaluate(expression));
-
-    return expression;
-}
-
-function reduceSimplePowers(expression: Expression): Expression {
-    if (!isOperation(expression)) return expression;
-
-    if (isOperation(expression.left)) expression.left = reduceSimplePowers(expression.left);
-    if (isOperation(expression.right)) expression.right = reduceSimplePowers(expression.right);
-
-    // if both the left and the right branch are simple terms, then we're facing a "simple multiplication"
-    if (
-        expression.operator.data.name === "power" &&
-        !isOperation(expression.left) &&
-        isKnown(expression.right)
-    ) {
-        incrementFactor(
-            expression.left.data.multiplier,
-            stringifyNumber(expression.left),
-            evaluate(expression.right) - 1
-        );
-
-        return expression.left;
-    }
-
-    return expression;
-}
-
-function reduceSimpleMultiplications(expression: Expression) {
-    if (!isOperation(expression)) return expression;
-
-    if (isOperation(expression.left)) expression.left = reduceSimpleMultiplications(expression.left);
-    if (isOperation(expression.right)) expression.right = reduceSimpleMultiplications(expression.right);
-
-    // if both the left and the right branch are simple terms, then we're facing a "simple multiplication"
-    if (
-        expression.operator.data.name === "product" &&
-        !isOperation(expression.left) &&
-        !isOperation(expression.right)
-    ) {
-        const result: Number = {
-            type: "number",
-
-            data: {
-                value: expression.left.data.value * expression.right.data.value,
-                multiplier: mergeMultipliers(
-                    expression.left.data.multiplier,
-                    expression.right.data.multiplier
-                ),
-            },
-        };
-
-        return result;
-    }
-
-    return expression;
+    return getOperator(stringifyOperator(expression.operator))!.operation(reducedLeft, reducedRight);
 }
 
 /**
