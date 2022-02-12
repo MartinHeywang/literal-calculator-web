@@ -112,7 +112,10 @@ export function extractMultiplier(text: string) {
  */
 export function stringifyNumber(term: Number) {
 
-    const digits = term.data.value !== 1 ? term.data.value : "";
+    let digits = term.data.value.toString();
+    if(digits === "1") digits = "";
+    if(digits === "-1") digits = "-";
+
     const multiplier = stringifyMultiplier(term.data.multiplier);
     
     const result = `${digits}${multiplier}`;
@@ -137,8 +140,6 @@ export function parseValueToTerm(value: number) {
 
 /**
  * Returns the Number with the opposite value.
- * 
- * Reminder: the opposite of 1 is -1, -3x is 3x...etc
  * 
  * @param number the input number
  * @returns the opposite term

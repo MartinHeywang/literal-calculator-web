@@ -1,8 +1,9 @@
+import { Fraction, FractionData, stringifyFraction } from "./fraction";
 import { extractMultiplier, extractValue, isNumber, NumberData, stringifyNumber, Number } from "./number";
 import { getOperatorName, getOperatorPriority, isOperator, Operator, OperatorData, stringifyOperator } from "./operator";
 import { isParenthesis, Parenthesis, ParenthesisData, stringifyParenthesis } from "./parenthesis";
 
-export type TermType = "number" | "operator" | "parenthesis";
+export type TermType = "number" | "fraction" | "operator" | "parenthesis";
 
 export type Term<T extends TermType = TermType> = {
     type: T;
@@ -12,6 +13,7 @@ export type Term<T extends TermType = TermType> = {
         T extends "operator" ? OperatorData
         : T extends "parenthesis" ? ParenthesisData
         : T extends "number" ? NumberData 
+        : T extends "fraction" ? FractionData
         : null // won't happen
     ;
 };
@@ -68,6 +70,9 @@ export function stringifyTerm(term: Term) {
     }
     if (term.type === "parenthesis") {
         return stringifyParenthesis(term as Parenthesis);
+    }
+    if (term.type === "fraction") {
+        return stringifyFraction(term as Fraction);
     }
 
     throw new Error("Can't stringify term of an unknown type.");

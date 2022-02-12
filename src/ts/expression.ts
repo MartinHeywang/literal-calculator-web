@@ -1,14 +1,15 @@
 import { minify, list, arrange, transform } from "./format";
 import { isMultiplierEmpty } from "./multiplier";
+import { Fraction } from "./terms/fraction";
 import { Number } from "./terms/number";
-import { operators, Operator, stringifyOperator, getOperator } from "./terms/operator";
-import { createTerm, stringifyTerm } from "./terms/terms";
+import { Operator, stringifyOperator, getOperator } from "./terms/operator";
+import { stringifyTerm } from "./terms/terms";
 import { regexCheck, parenthesesCheck, orderCheck } from "./verify";
 
 /**
  * An Expression represents a mathematical expression. Under the hood, it is either an operation or a number.
  */
-export type Expression = Operation | Number;
+export type Expression = Operation | Number | Fraction;
 
 /**
  * An Operation is a small part from an expression. It joins two expressions with a given operator.
@@ -24,7 +25,7 @@ export type Operation = {
 
 /**
  * Creates an expression based on the given string.
- * 
+ *
  * @param text the input text
  * @returns the new expression
  */
@@ -60,8 +61,17 @@ export function createExpression(text: string) {
  * @returns true, if the value of the list is known, or not
  */
 export function isKnown(expression: Expression): boolean {
-    const isTermKnown = (term: Number) => {
+
+    const isTermKnown = (term: Number | Fraction) => {
+        return isNumber(term) ? isNumberKnown(term) : isFractionKnown(term)
+    }
+
+    const isNumberKnown = (term: Number) => {
         return isMultiplierEmpty(term.data.multiplier);
+    };
+
+    const isFractionKnown = (term: Fraction) => {
+        return isKnown(term.data.numerator) && isKnown(term.data.denominator);
     };
 
     if (!isOperation(expression)) return isTermKnown(expression);
@@ -108,13 +118,13 @@ export function stringifyExpression(expression: Expression) {
     }`;
 
     console.groupEnd();
-    
+
     return result;
 }
 
 /**
  * Reduces the given expression. May mutate the object and returns it.
- * 
+ *
  * @param expression the expression to reduce
  * @returns the reduced expression
  */
@@ -128,38 +138,6 @@ export function reduce(expression: Expression): Expression {
 }
 
 /**
- * Evaluates the value of a numerical expression.
- *
- * @param expression the list of symbols to evaluate
- * @returns the value of the numerical expression
- */
-export function evaluate(element: Expression): number {
-    if (!isKnown(element)) throw new Error("An unknown element can't be evaluated.");
-
-    if (!isOperation(element)) {
-        return element.data.value;
-    }
-
-    const expression = element;
-
-    const leftTerm = (
-        isOperation(expression.left)
-            ? // evaluate deeper to create a term
-              createTerm(evaluate(expression.left).toString())
-            : // or get the term that's directly under our nose
-              expression.left
-    ) as Number;
-    const rightTerm = (
-        isOperation(expression.right)
-            ? createTerm(evaluate(expression.right).toString())
-            : expression.right
-    ) as Number;
-
-    return (operators[expression.operator.data.name].operation(leftTerm, rightTerm) as Number).data
-        .value;
-}
-
-/**
  * Checks if the given expression is, at its root, an operation.
  *
  * @param expression the expression to check
@@ -170,25 +148,45 @@ export function isOperation(expression: Expression): expression is Operation {
 }
 
 /**
+ * Checks if the given expression is only composed of a single number.
+ *
+ * @param expression the input expression
+ * @returns true if the given expression is a simple number, false otherwise
+ */
+export function isNumber(expression: Expression): expression is Number {
+    return !expression.hasOwnProperty("operator") && !expression.hasOwnProperty("numerator");
+}
+
+/**
+ * Checks if the given expression is only composed of a fraction.
+ *
+ * @param expression the input expression
+ * @returns true if the expression is a fraction, false otherwise
+ */
+export function isFraction(expression: Expression): expression is Fraction {
+    return expression.hasOwnProperty("numerator");
+}
+
+/**
  * Checks if the given expression is a sum (or a difference)
- * 
+ *
  * @param expression the expression to check
  * @returns true if the expression is a sum, false otherwise
  */
 export function isSum(expression: Expression) {
-    if(!isOperation(expression)) return false;
+    if (!isOperation(expression)) return false;
 
     return expression.operator.data.name === "sum" || expression.operator.data.name === "difference";
 }
 
 /**
  * Checks if the given expression is a product (or a quotient)
- * 
+ *
  * @param expression the expression to check
  * @returns true if the expression is a product, false otherwise
  */
 export function isProduct(expression: Expression) {
-    if(!isOperation(expression)) return false;
+    if (!isOperation(expression)) return false;
 
     return expression.operator.data.name === "product" || expression.operator.data.name === "quotient";
 }

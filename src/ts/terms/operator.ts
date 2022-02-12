@@ -1,4 +1,4 @@
-import { isOperation, Expression, isKnown, evaluate } from "../expression";
+import { isOperation, Expression, isKnown } from "../expression";
 import { incrementFactor, mergeMultipliers, sameMultiplier, subtractMultipliers } from "../multiplier";
 import { createTerm, Term, stringifyTerm } from "./terms";
 import { Number, oppositeTerm, stringifyNumber } from "./number";
@@ -183,9 +183,9 @@ export const operators = {
                         // but, when parsing, letters and numbers are separated
                         // and, because powers are always calculated first
                         // this will never happen
-                        // conclusion: this is safe
                         stringifyNumber(aTerm),
-                        evaluate(bTerm) - 1
+
+                        bTerm.data.value - 1
                     );
 
                     return aTerm;
