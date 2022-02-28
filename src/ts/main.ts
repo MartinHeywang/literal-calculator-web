@@ -14,6 +14,17 @@ e.compute.addEventListener("click", () => {
     // const abscissa = parseFloat(e.def.a.textContent || "1");
 
     const def = createExpression(textDef);
+
     
-    console.log(stringifyExpression(reduce(def)));
+    const reduced = reduce(def);
+
+    console.groupCollapsed("%cParsed", "color: orange; font-size: 1.2rem");
+    console.log(def)
+    console.log(stringifyExpression(def))
+    console.groupEnd();
+    
+    console.group("%cReduced", "color: yellow; font-size: 1.2rem")
+    console.log(reduced);
+    console.log(stringifyExpression(reduced));
+    console.groupEnd();
 })

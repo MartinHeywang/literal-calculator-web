@@ -1,7 +1,24 @@
-import { isOperation, Expression, isKnown } from "../expression";
-import { incrementFactor, mergeMultipliers, sameMultiplier, subtractMultipliers } from "../multiplier";
+import {
+    isOperation,
+    Expression,
+    isKnown,
+    breakInTerms,
+    isNumber as isExpressionNumber,
+    oppositeExpression,
+    stringifyExpression,
+    createExpression,
+    Operation,
+} from "../expression";
+import {
+    incrementFactor,
+    mergeMultipliers,
+    sameMultiplier,
+    stringifyMultiplier,
+    subtractMultipliers,
+} from "../multiplier";
 import { createTerm, Term, stringifyTerm } from "./terms";
-import { Number, oppositeTerm, stringifyNumber } from "./number";
+import { Number, stringifyNumber } from "./number";
+import { structure } from "../format";
 
 export type Operator = Term<"operator">;
 
@@ -10,61 +27,74 @@ export const operators = {
         priority: 0,
         symbol: "+",
         operation: (a: Expression, b: Expression) => {
-            const terms = {
-                a: !isOperation(a),
-                b: !isOperation(b),
-            };
 
-            if (terms.a && terms.b) {
-                const aTerm = a as Number;
-                const bTerm = b as Number;
+            const brokenTerms = [...breakInTerms(a), ...breakInTerms(b)];
 
-                if (sameMultiplier(aTerm.data.multiplier, bTerm.data.multiplier)) {
-                    const resultValue = aTerm.data.value + bTerm.data.value;
+            const termsCount: { [x: string]: number } = {};
 
-                    const resultTerm: Number = {
-                        type: "number",
-                        data: {
-                            value: resultValue,
-                            multiplier: aTerm.data.multiplier,
-                        },
-                    };
+            brokenTerms.forEach(expression => {
+                if (isExpressionNumber(expression)) {
+                    const stringified = stringifyMultiplier(expression.data.multiplier);
 
-                    return resultTerm;
+                    termsCount[stringified] ||= 0; // init to 0 if yet undefined (falsy)
+                    termsCount[stringified] += expression.data.value;
+                    return; // equals continue;
                 }
-            }
 
-            // TODO: explore the expressions
+                const stringified = stringifyExpression(expression);
+                termsCount[stringified] ||= 0;
+                termsCount[stringified]++;
+            });
 
-            return {
-                left: a,
-                operator: createTerm<Operator>("+"),
-                right: b,
+            const termsUnstructured = Object.keys(termsCount)
+                .sort((a, b) => {
+                    if (a.length < b.length) return 1;
+                    if (a.length > b.length) return -1;
+                    return 0;
+                })
+                .map(key => {
+                    const count = termsCount[key]!;
 
-                impossible: true,
-            };
+                    let result: Expression | null;
+
+                    if (count === 0) return null;
+
+                    // does the key contains operators ?
+                    outerCondition: if (/[\+\-\*\/]/.test(key)) {
+                        const expression = createExpression(key) as Operation;
+
+                        if (count === 1) {
+                            result = expression;
+                            break outerCondition;
+                        }
+
+                        result = {
+                            left: createTerm<Number>(count.toString()),
+                            operator: createTerm<Operator>("*"),
+                            right: { ...expression, impossible: true }, // mark as impossible
+                        };
+                    } else {
+                        result = createTerm<Number>(`${count}${key}`);
+                    }
+
+                    return [result, createTerm("+")];
+                })
+                .flat(100) // magic number
+                .filter(o => o !== null);
+
+            termsUnstructured.pop();
+
+            // @ts-expect-error
+            // we're sure 'termsUnstructured' does not contain 'null' elements
+            // null elements have been filtered out
+            return structure(termsUnstructured, { markAsImpossible: true });
         },
     },
     difference: {
         priority: 0,
         symbol: "-",
         operation: (a: Expression, b: Expression) => {
-            const terms = {
-                a: !isOperation(a),
-                b: !isOperation(b),
-            };
-
-            if (terms.a && terms.b) {
-                return operators.sum.operation(a as Number, oppositeTerm(b as Number));
-            }
-
-            return {
-                left: a,
-                operator: createTerm<Operator>("-"),
-                right: b,
-
-                impossible: true,
-            };
+            return operators.sum.operation(a, oppositeExpression(b));
         },
     },
     product: {
@@ -93,15 +123,46 @@ export const operators = {
                 return resultTerm;
             }
 
-            // TODO: explore the expressions
+            const brokenA = breakInTerms(a);
+            const brokenB = breakInTerms(b);
 
-            return {
-                left: a,
-                operator: createTerm<Operator>("*"),
-                right: b,
+            const termsOfSum = brokenA
+                .map(termOfA => {
+                    return brokenB.map(termOfB => {
+                        let result: Expression;
 
-                impossible: true,
-            };
+                        if (!isExpressionNumber(termOfA) || !isExpressionNumber(termOfB)) {
+                            result = {
+                                left: termOfA,
+                                right: termOfB,
+                                operator: createTerm<Operator>("*"),
+
+                                impossible: true,
+                            };
+                        } else {
+                            result = {
+                                type: "number",
+                                data: {
+                                    value: termOfA.data.value * termOfB.data.value,
+                                    multiplier: mergeMultipliers(
+                                        termOfA.data.multiplier,
+                                        termOfB.data.multiplier
+                                    ),
+                                },
+                            };
+                        }
+
+                        // add the result and a plus sign
+                        return [result, createTerm("+")];
+                    });
+                })
+                .flat(100); // 100 = magic number
+
+            termsOfSum.pop(); // remove the plus sign at the very end
+
+            // WHERE DOES THIS COME FROM?
+            // the sum operation contains a logic that sums up the terms of the development
+            return operators.sum.operation(structure(termsOfSum), createTerm<Number>("0"));
         },
     },
     quotient: {
@@ -176,10 +237,12 @@ export const operators = {
 
                 // compacts numbers -> x^2 for example
                 if (isKnown(bTerm)) {
-                    incrementFactor(
-                        aTerm.data.multiplier,
+                    const resultTerm = JSON.parse(JSON.stringify(aTerm)) as Number;
 
-                        // hey! we could think that the result of "stringifyNumber" may start with a number (e.g. "2x")
+                    incrementFactor(
+                        resultTerm.data.multiplier,
+
+                        // we could think that the result of "stringifyNumber" may start with a number (e.g. "2x")
                         // but, when parsing, letters and numbers are separated
                         // and, because powers are always calculated first
                         // this will never happen
@@ -188,18 +251,16 @@ export const operators = {
                         bTerm.data.value - 1
                     );
 
-                    return aTerm;
+                    return resultTerm;
                 }
             }
-
-            // TODO: explore the expressions
 
             return {
                 left: a,
                 operator: createTerm<Operator>("^"),
                 right: b,
 
-                frozen: true,
+                impossible: true,
             };
         },
     },

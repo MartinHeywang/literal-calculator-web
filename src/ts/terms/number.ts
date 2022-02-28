@@ -13,7 +13,8 @@ export function isNumber(term: string | Term) {
 
     const toBeChecked = typeof term === "object" ? stringifyTerm(term) : term;
 
-    return /^(-?[0-9]*(\.?[0-9]+)?[a-z]*){1}$/g.test(toBeChecked);
+    // handmade regex
+    return /^(-?[0-9]*(\.?[0-9]+)?([a-z](\^[0-9]+)?)*){1}$/g.test(toBeChecked);
 }
 
 /**

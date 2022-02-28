@@ -1,12 +1,14 @@
+import { Expression, isOperation } from "./expression";
 import { isOperator } from "./terms/operator";
 import { stringifyTerm, Term } from "./terms/terms";
 
 export type TermList = (Term | TermList)[];
 
+export type ExpressionList = (Term | Expression | ExpressionList)[];
 
 /**
  * Stringifies the given terms list in a human-readable way.
- * 
+ *
  * @param list the terms list to stringify
  * @returns the human-readable string generated based on the given list
  */
@@ -37,13 +39,14 @@ export function stringifyTermsList(list: TermList) {
  * @param options the criteria if needed
  * @returns the index of the first operator, or null if none were found.
  */
-export function findOperator(list: TermList, options?: { priority?: number }) {
+export function findOperator(list: ExpressionList, options?: { priority?: number }) {
     for (let i = 0; i < list.length; i++) {
         const term = list[i];
 
         if (Array.isArray(term)) continue;
+        if (isOperation(term)) continue;
 
-        if (isOperator(stringifyTerm(term), { priority: options?.priority })) return i;
+        if (isOperator(term, { priority: options?.priority })) return i;
     }
 
     return null;
@@ -56,11 +59,12 @@ export function findOperator(list: TermList, options?: { priority?: number }) {
  * @param options the criteria if needed
  * @returns the index of the first operator, or null if none were found.
  */
-export function findLastOperator(list: TermList, options?: { priority?: number }) {
+export function findLastOperator(list: ExpressionList, options?: { priority?: number }) {
     for (let i = list.length - 1; i >= 0; i--) {
         const term = list[i];
 
         if (Array.isArray(term)) continue;
+        if (isOperation(term)) continue;
 
         if (isOperator(stringifyTerm(term), { priority: options?.priority })) return i;
     }

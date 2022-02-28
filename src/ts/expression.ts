@@ -2,8 +2,8 @@ import { minify, list, arrange, transform } from "./format";
 import { isMultiplierEmpty } from "./multiplier";
 import { Fraction } from "./terms/fraction";
 import { Number } from "./terms/number";
-import { Operator, stringifyOperator, getOperator } from "./terms/operator";
-import { stringifyTerm } from "./terms/terms";
+import { Operator, stringifyOperator, getOperator, operators } from "./terms/operator";
+import { createTerm, stringifyTerm, Term } from "./terms/terms";
 import { regexCheck, parenthesesCheck, orderCheck } from "./verify";
 
 /**
@@ -61,10 +61,9 @@ export function createExpression(text: string) {
  * @returns true, if the value of the list is known, or not
  */
 export function isKnown(expression: Expression): boolean {
-
     const isTermKnown = (term: Number | Fraction) => {
-        return isNumber(term) ? isNumberKnown(term) : isFractionKnown(term)
-    }
+        return isNumber(term) ? isNumberKnown(term) : isFractionKnown(term);
+    };
 
     const isNumberKnown = (term: Number) => {
         return isMultiplierEmpty(term.data.multiplier);
@@ -117,8 +116,6 @@ export function stringifyExpression(expression: Expression) {
         addParenthesesOn.right ? ")" : ""
     }`;
 
-    console.groupEnd();
-
     return result;
 }
 
@@ -129,13 +126,59 @@ export function stringifyExpression(expression: Expression) {
  * @returns the reduced expression
  */
 export function reduce(expression: Expression): Expression {
-    if (!isOperation(expression)) return expression;
+    let result: Expression = JSON.parse(JSON.stringify(expression));
 
-    const reducedLeft = reduce(expression.left);
-    const reducedRight = reduce(expression.right);
+    console.groupCollapsed("%cReduction step", "color: limegreen; font-size: 1.2rem");
 
-    return getOperator(stringifyOperator(expression.operator))!.operation(reducedLeft, reducedRight);
+    while(isReducible(result)) {
+        const operation = result as Operation;
+
+        const reducedLeft = reduce(operation.left);
+        console.log(stringifyOperator(operation.operator))
+        const reducedRight = reduce(operation.right);
+        
+        result = getOperator(stringifyOperator(operation.operator))!.operation(reducedLeft, reducedRight);
+    }
+    
+    console.log("Result : %c"+ stringifyExpression(result), "color: skyblue");
+    console.groupEnd();
+
+    return result;
 }
+
+/**
+ * Breaks the given expression in terms of a sum.
+ *
+ * Example:
+ * - "2 + 3 - 2x" -> ["2", "3", "-2x"]
+ *
+ * @param expression the expression to break
+ * @returns an array of expressions
+ */
+export function breakInTerms(expression: Expression): Expression[] {
+    if (!isOperation(expression)) return [expression];
+
+    if (expression.operator.data.name === "sum") {
+        return [...breakInTerms(expression.left), ...breakInTerms(expression.right)];
+    }
+    if (expression.operator.data.name === "difference") {
+        return [...breakInTerms(expression.left), ...breakInTerms(oppositeExpression(expression.right))];
+    }
+
+    return [expression];
+}
+
+/**
+ * Returns the opposite of the given expression.
+ * 
+ * @param expression the input expression
+ * @returns the opposite of the input expression
+ */
+export function oppositeExpression(expression: Expression) {
+    return operators.product.operation(JSON.parse(JSON.stringify(expression)), createTerm<Number>("-1"));
+}
+
+/* CHECKS -------------------------------------------------------------------------------------- */
 
 /**
  * Checks if the given expression is, at its root, an operation.
@@ -143,7 +186,7 @@ export function reduce(expression: Expression): Expression {
  * @param expression the expression to check
  * @returns true if the expression is an operation, false otherwise
  */
-export function isOperation(expression: Expression): expression is Operation {
+export function isOperation(expression: Expression | Term): expression is Operation {
     return expression.hasOwnProperty("operator");
 }
 
@@ -153,7 +196,7 @@ export function isOperation(expression: Expression): expression is Operation {
  * @param expression the input expression
  * @returns true if the given expression is a simple number, false otherwise
  */
-export function isNumber(expression: Expression): expression is Number {
+export function isNumber(expression: Expression | Term): expression is Number {
     return !expression.hasOwnProperty("operator") && !expression.hasOwnProperty("numerator");
 }
 
@@ -163,7 +206,7 @@ export function isNumber(expression: Expression): expression is Number {
  * @param expression the input expression
  * @returns true if the expression is a fraction, false otherwise
  */
-export function isFraction(expression: Expression): expression is Fraction {
+export function isFraction(expression: Expression | Term): expression is Fraction {
     return expression.hasOwnProperty("numerator");
 }
 
@@ -174,7 +217,7 @@ export function isFraction(expression: Expression): expression is Fraction {
  * @returns true if the expression is a sum, false otherwise
  */
 export function isSum(expression: Expression) {
-    if (!isOperation(expression)) return false;
+    if (!isOperation(expression)) return true;
 
     return expression.operator.data.name === "sum" || expression.operator.data.name === "difference";
 }
@@ -186,7 +229,22 @@ export function isSum(expression: Expression) {
  * @returns true if the expression is a product, false otherwise
  */
 export function isProduct(expression: Expression) {
-    if (!isOperation(expression)) return false;
+    if (!isOperation(expression)) return true;
 
     return expression.operator.data.name === "product" || expression.operator.data.name === "quotient";
+}
+
+export function isReducible(expression: Expression): boolean {
+    if(!isOperation(expression)) return false;
+
+    // not impossible -> reducible
+    if(expression.impossible !== true) return true;
+
+    const leftAnswer = isReducible(expression.left);
+    if(leftAnswer) return true;
+
+    const rightAnswer = isReducible(expression.right);
+    if(rightAnswer) return true;
+
+    return false;
 }

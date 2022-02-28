@@ -1,9 +1,9 @@
-import { Expression } from "./expression";
-import { isNumber, isLetter, isDigit, Number } from "./terms/number";
+import { Expression, Operation } from "./expression";
+import { isNumber, isLetter, isDigit } from "./terms/number";
 import { isOperator, Operator } from "./terms/operator";
 import { isParenthesis } from "./terms/parenthesis";
 import { createTerm, stringifyTerm, Term } from "./terms/terms";
-import { findLastOperator, TermList } from "./termsList";
+import { ExpressionList, findLastOperator, TermList } from "./termsList";
 
 /**
  * Removes whitespace and other useless characters from the expression.
@@ -242,7 +242,10 @@ function deepen(list: Term[]) {
  * @param list the terms list to structure
  * @returns the new expression
  */
-function structure(list: TermList): Expression {
+export function structure(list: ExpressionList, options?: {
+    markAsImpossible?: boolean;
+}): Expression {
+
     if (list.length === 1) {
         // lists with only one term are special
 
@@ -252,7 +255,7 @@ function structure(list: TermList): Expression {
         }
 
         // else just return the term -> there will be no operator to structure
-        return list[0] as Number;
+        return list[0] as Exclude<Expression, Operation>;
     }
 
     const findOperators = () => ({
@@ -274,12 +277,11 @@ function structure(list: TermList): Expression {
         throw new Error("Could not structure misconstructed expression.");
     }
 
-    const leftStructured = structure(left);
-    const rightStructured = structure(right);
-
     return {
-        left: leftStructured,
+        left: structure(left, options),
         operator,
-        right: rightStructured,
+        right: structure(right, options),
+
+        impossible: options?.markAsImpossible || false
     };
 }
