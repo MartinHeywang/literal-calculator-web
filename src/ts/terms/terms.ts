@@ -1,4 +1,4 @@
-import { Fraction, FractionData, stringifyFraction } from "./fraction";
+import { Fraction, FractionData, stringifyFraction, isFraction, parseFraction } from "./fraction";
 import { extractMultiplier, extractValue, isNumber, NumberData, stringifyNumber, Number } from "./number";
 import { getOperatorName, getOperatorPriority, isOperator, Operator, OperatorData, stringifyOperator } from "./operator";
 import { isParenthesis, Parenthesis, ParenthesisData, stringifyParenthesis } from "./parenthesis";
@@ -55,6 +55,9 @@ export function createTerm<T extends Term>(text: string): T {
 
         // @ts-ignore
         return data as Term<T>;
+    } else if (isFraction(text)) {
+        // @ts-ignore
+        return parseFraction(text) as Term<T>;
     } else {
         throw new Error(`The text '${text}' could not be recognized as a term.`);
     }

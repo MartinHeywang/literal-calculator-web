@@ -15,7 +15,7 @@ import { isParenthesis } from "./terms/parenthesis";
  * @returns
  */
 export function regexCheck(expression: string) {
-    return /^[0-9\.a-z\+\-\*\/\(\)\^\[\]]+$/g.test(expression);
+    return /^[0-9\.a-z\+\-\*\/\(\)\^\[\]|]+$/g.test(expression);
 }
 
 /**

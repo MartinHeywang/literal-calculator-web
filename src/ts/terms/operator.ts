@@ -8,17 +8,15 @@ import {
     stringifyExpression,
     createExpression,
     Operation,
+    inverseExpression,
+    isFraction,
+    cloneExpression,
 } from "../expression";
-import {
-    incrementFactor,
-    mergeMultipliers,
-    sameMultiplier,
-    stringifyMultiplier,
-    subtractMultipliers,
-} from "../multiplier";
+import { incrementFactor, mergeMultipliers, stringifyMultiplier } from "../multiplier";
 import { createTerm, Term, stringifyTerm } from "./terms";
 import { Number, stringifyNumber } from "./number";
 import { structure } from "../format";
+import { createFraction } from "./fraction";
 
 export type Operator = Term<"operator">;
 
@@ -27,7 +25,6 @@ export const operators = {
         priority: 0,
         symbol: "+",
         operation: (a: Expression, b: Expression) => {
-
             const brokenTerms = [...breakInTerms(a), ...breakInTerms(b)];
 
             const termsCount: { [x: string]: number } = {};
@@ -46,6 +43,8 @@ export const operators = {
                 termsCount[stringified]++;
             });
 
+            console.log("Summing up terms");
+
             const termsUnstructured = Object.keys(termsCount)
                 .sort((a, b) => {
                     if (a.length < b.length) return 1;
@@ -60,8 +59,10 @@ export const operators = {
                     if (count === 0) return null;
 
                     // does the key contains operators ?
-                    outerCondition: if (/[\+\-\*\/]/.test(key)) {
+                    outerCondition: if (/[\+\-\*\/|]/.test(key)) {
                         const expression = createExpression(key) as Operation;
+
+                        console.log(`Key%c${key}%c contains operators.`, "color: skyblue");
 
                         if (count === 1) {
                             result = expression;
@@ -74,6 +75,7 @@ export const operators = {
                             right: { ...expression, impossible: true }, // mark as impossible
                         };
                     } else {
+                        console.log(`Key %c${key}%c does not contain operators.`, "color: skyblue");
                         result = createTerm<Number>(`${count}${key}`);
                     }
 
@@ -101,28 +103,6 @@ export const operators = {
         priority: 1,
         symbol: "*",
         operation: (a: Expression, b: Expression) => {
-            const terms = {
-                a: !isOperation(a),
-                b: !isOperation(b),
-            };
-
-            if (terms.a && terms.b) {
-                const aTerm = a as Number;
-                const bTerm = b as Number;
-
-                const resultValue = aTerm.data.value * bTerm.data.value;
-
-                const resultTerm: Number = {
-                    type: "number",
-                    data: {
-                        value: resultValue,
-                        multiplier: mergeMultipliers(aTerm.data.multiplier, bTerm.data.multiplier),
-                    },
-                };
-
-                return resultTerm;
-            }
-
             const brokenA = breakInTerms(a);
             const brokenB = breakInTerms(b);
 
@@ -131,24 +111,48 @@ export const operators = {
                     return brokenB.map(termOfB => {
                         let result: Expression;
 
-                        if (!isExpressionNumber(termOfA) || !isExpressionNumber(termOfB)) {
+                        outerCondition: if (!isOperation(termOfA) && !isOperation(termOfB)) {
+
+                            if(isExpressionNumber(termOfA) && isExpressionNumber(termOfB)) {
+                                result = {
+                                    type: "number",
+                                    data: {
+                                        value: termOfA.data.value * termOfB.data.value,
+                                        multiplier: mergeMultipliers(
+                                            termOfA.data.multiplier,
+                                            termOfB.data.multiplier
+                                        ),
+                                    },
+                                };
+                                break outerCondition;
+                            }
+
+                            const fractionA = isFraction(termOfA)
+                                ? cloneExpression(termOfA)
+                                : createFraction(cloneExpression(termOfA), createTerm<Number>("1"));
+                            const fractionB = isFraction(termOfB)
+                                ? cloneExpression(termOfB)
+                                : createFraction(cloneExpression(termOfB), createTerm<Number>("1"));
+
+                            console.log("Multiplying fractions")
+                            console.log(fractionA)
+                            console.log(fractionB)
+
+                            result = createFraction(
+                                operators.product.operation(fractionA.data.numerator, fractionB.data.numerator),
+                                operators.product.operation(fractionA.data.denominator, fractionB.data.denominator),
+                            )
+
+                            console.log(result);
+
+                        } else {
+                            // operation is impossible
                             result = {
                                 left: termOfA,
                                 right: termOfB,
                                 operator: createTerm<Operator>("*"),
 
                                 impossible: true,
-                            };
-                        } else {
-                            result = {
-                                type: "number",
-                                data: {
-                                    value: termOfA.data.value * termOfB.data.value,
-                                    multiplier: mergeMultipliers(
-                                        termOfA.data.multiplier,
-                                        termOfB.data.multiplier
-                                    ),
-                                },
                             };
                         }
 
@@ -169,42 +173,7 @@ export const operators = {
         priority: 1,
         symbol: "/",
         operation: (a: Expression, b: Expression) => {
-            const terms = {
-                a: !isOperation(a),
-                b: !isOperation(b),
-            };
-
-            if (terms.a && terms.b) {
-                const aTerm = a as Number;
-                const bTerm = b as Number;
-
-                if (sameMultiplier(aTerm.data.multiplier, bTerm.data.multiplier)) {
-                    const resultValue = aTerm.data.value / bTerm.data.value;
-
-                    const resultTerm: Number = {
-                        type: "number",
-                        data: {
-                            value: resultValue,
-                            multiplier: subtractMultipliers(
-                                aTerm.data.multiplier,
-                                bTerm.data.multiplier
-                            ),
-                        },
-                    };
-
-                    return resultTerm;
-                }
-            }
-
-            // TODO: explore the expressions
-
-            return {
-                left: a,
-                operator: createTerm<Operator>("/"),
-                right: b,
-
-                impossible: true,
-            };
+            return operators.product.operation(a, inverseExpression(b));
         },
     },
     power: {

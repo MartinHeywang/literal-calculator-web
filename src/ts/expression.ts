@@ -1,6 +1,6 @@
 import { minify, list, arrange, transform } from "./format";
 import { isMultiplierEmpty } from "./multiplier";
-import { Fraction } from "./terms/fraction";
+import { createFraction, Fraction } from "./terms/fraction";
 import { Number } from "./terms/number";
 import { Operator, stringifyOperator, getOperator, operators } from "./terms/operator";
 import { createTerm, stringifyTerm, Term } from "./terms/terms";
@@ -50,6 +50,16 @@ export function createExpression(text: string) {
     const transformed = transform(arranged);
 
     return transformed;
+}
+
+/**
+ * Returns the clone of an expression
+ *
+ * @param expression the expression to be cloned
+ * @returns the cloned expression
+ */
+export function cloneExpression<T extends Expression>(expression: T) {
+    return JSON.parse(JSON.stringify(expression)) as T;
 }
 
 /**
@@ -130,17 +140,20 @@ export function reduce(expression: Expression): Expression {
 
     console.groupCollapsed("%cReduction step", "color: limegreen; font-size: 1.2rem");
 
-    while(isReducible(result)) {
+    while (isReducible(result)) {
         const operation = result as Operation;
 
         const reducedLeft = reduce(operation.left);
-        console.log(stringifyOperator(operation.operator))
+        console.log(stringifyOperator(operation.operator));
         const reducedRight = reduce(operation.right);
-        
-        result = getOperator(stringifyOperator(operation.operator))!.operation(reducedLeft, reducedRight);
+
+        result = getOperator(stringifyOperator(operation.operator))!.operation(
+            reducedLeft,
+            reducedRight
+        );
     }
-    
-    console.log("Result : %c"+ stringifyExpression(result), "color: skyblue");
+
+    console.log("Result : %c" + stringifyExpression(result), "color: skyblue");
     console.groupEnd();
 
     return result;
@@ -170,12 +183,26 @@ export function breakInTerms(expression: Expression): Expression[] {
 
 /**
  * Returns the opposite of the given expression.
- * 
+ *
  * @param expression the input expression
  * @returns the opposite of the input expression
  */
 export function oppositeExpression(expression: Expression) {
     return operators.product.operation(JSON.parse(JSON.stringify(expression)), createTerm<Number>("-1"));
+}
+
+/**
+ * Returns the inverse of the given expression
+ *
+ * @param expression the input expression
+ * @returns the inverse of the input expression
+ */
+export function inverseExpression(expression: Expression) {
+    return createFraction(
+        createTerm<Number>("1"),
+        /* over */
+        cloneExpression(expression)
+    );
 }
 
 /* CHECKS -------------------------------------------------------------------------------------- */
@@ -197,7 +224,7 @@ export function isOperation(expression: Expression | Term): expression is Operat
  * @returns true if the given expression is a simple number, false otherwise
  */
 export function isNumber(expression: Expression | Term): expression is Number {
-    return !expression.hasOwnProperty("operator") && !expression.hasOwnProperty("numerator");
+    return !isOperation(expression) && !isFraction(expression);
 }
 
 /**
@@ -207,7 +234,13 @@ export function isNumber(expression: Expression | Term): expression is Number {
  * @returns true if the expression is a fraction, false otherwise
  */
 export function isFraction(expression: Expression | Term): expression is Fraction {
-    return expression.hasOwnProperty("numerator");
+
+    // @ts-ignore
+    // property data may not exist on 'expression'
+    // but in this case, the optional channelling operator prevents any undefined error.
+    const result = expression.data?.hasOwnProperty("numerator");
+
+    return result ? true : false;
 }
 
 /**
@@ -234,17 +267,23 @@ export function isProduct(expression: Expression) {
     return expression.operator.data.name === "product" || expression.operator.data.name === "quotient";
 }
 
+/**
+ * Predicts whether the expression is potentially reducible.
+ * 
+ * @param expression the expression to check
+ * @returns whether the expression is reducible or not
+ */
 export function isReducible(expression: Expression): boolean {
-    if(!isOperation(expression)) return false;
+    if (!isOperation(expression)) return false;
 
     // not impossible -> reducible
-    if(expression.impossible !== true) return true;
+    if (expression.impossible !== true) return true;
 
     const leftAnswer = isReducible(expression.left);
-    if(leftAnswer) return true;
+    if (leftAnswer) return true;
 
     const rightAnswer = isReducible(expression.right);
-    if(rightAnswer) return true;
+    if (rightAnswer) return true;
 
     return false;
 }
