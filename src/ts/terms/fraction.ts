@@ -1,4 +1,5 @@
-import { Expression, stringifyExpression } from "../expression";
+import { Expression, isOperation, stringifyExpression } from "../expression";
+import { stringifyMultiplier, subtractMultipliers } from "../multiplier";
 import { isNumber, Number } from "./number";
 import { createTerm, stringifyTerm, Term } from "./terms";
 
@@ -31,7 +32,7 @@ export function createFraction(numerator: Expression, denominator: Expression) {
 
 /**
  * Parses the given text as a fraction.
- * 
+ *
  * @param text the input text
  * @returns the created fraction
  */
@@ -76,7 +77,7 @@ export function stringifyFraction(fraction: Fraction): string {
     )}`;
 }
 
-export function isFraction(term: string | Term) {
+export function isFraction(term: string | Term): term is Fraction {
     if (!term) return false;
 
     const text = typeof term === "object" ? stringifyTerm(term) : term;
@@ -90,4 +91,71 @@ export function isFraction(term: string | Term) {
     if (!isNumber(text.slice(text.indexOf("|") + 1))) return false;
 
     return true;
+}
+
+export function simplifyFraction(input: Fraction): Fraction | Number {
+    
+    let { numerator, denominator } = input.data;
+    if (isOperation(numerator) || isOperation(denominator)) {
+        return createFraction(numerator, denominator);
+    }
+
+    // it may be possible to reduce sub-fractions into simple numbers, so do it!
+    if (isFraction(numerator)) numerator = simplifyFraction(numerator);
+    if (isFraction(denominator)) denominator = simplifyFraction(denominator);
+
+    if(!isNumber(numerator) || !isNumber(denominator)) {
+        return createFraction(numerator, denominator);
+    }
+    
+    // at this point we are sure both the numerator and the denominator are numbers
+    // and this is required in order to simplify fraction
+
+    const resultMultiplier = subtractMultipliers(numerator.data.multiplier, denominator.data.multiplier);
+
+    console.log("simplify fraction");
+    console.log(resultMultiplier);
+
+    // if the multiplier contain negative values
+    if(Object.keys(resultMultiplier).some(key => {
+        const value = resultMultiplier[key];
+        return value < 0;
+    })) {
+        // then the division is impossible
+        // e.g can't simplify '1 | y'
+        return createFraction(numerator, denominator);
+    }
+
+    const isDivisible = (a: number, b: number) => a % b === 0;
+
+    if(isDivisible(numerator.data.value, denominator.data.value)) {
+        const numericalValue = numerator.data.value / denominator.data.value;
+        return createTerm(`${numericalValue}${stringifyMultiplier(resultMultiplier)}`)
+    }
+
+    let divider = 1;
+    const resetDivider = () => divider = 1;
+
+    let newNumeratorValue = numerator.data.value;
+    let newDenominatorValue = denominator.data.value;
+
+    while (divider <= newNumeratorValue && divider <= newDenominatorValue && divider < 100_000) {
+        divider++;
+
+        if (isDivisible(newNumeratorValue, divider) && isDivisible(newDenominatorValue, divider)) {
+            newNumeratorValue /= divider;
+            newDenominatorValue /= divider;
+
+            resetDivider();
+        }
+    }
+
+    return {
+        type: "fraction",
+
+        data: {
+            numerator: createTerm<Number>(`${newNumeratorValue}${stringifyMultiplier(resultMultiplier)}`),
+            denominator: createTerm<Number>(`${newDenominatorValue}`),
+        },
+    };
 }

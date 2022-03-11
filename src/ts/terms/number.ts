@@ -8,7 +8,7 @@ export type NumberData = {
     multiplier: Multiplier;
 };
 
-export function isNumber(term: string | Term) {
+export function isNumber(term: string | Term): term is string | Number {
     if (!term) return false;
 
     const toBeChecked = typeof term === "object" ? stringifyTerm(term) : term;

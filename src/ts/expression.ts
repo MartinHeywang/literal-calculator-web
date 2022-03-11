@@ -32,6 +32,8 @@ export type Operation = {
 export function createExpression(text: string) {
     const minified = minify(text);
 
+    console.log("create expression");
+
     if (!regexCheck(minified)) {
         throw new Error(
             `The expression '${text}' could not be parsed because it contains unsupported characters.`
@@ -47,6 +49,7 @@ export function createExpression(text: string) {
         throw new Error(`The expression '${text}' could not be parsed because of an order error.`);
     }
 
+    console.log(arranged);
     const transformed = transform(arranged);
 
     return transformed;

@@ -16,7 +16,7 @@ import { incrementFactor, mergeMultipliers, stringifyMultiplier } from "../multi
 import { createTerm, Term, stringifyTerm } from "./terms";
 import { Number, stringifyNumber } from "./number";
 import { structure } from "../format";
-import { createFraction } from "./fraction";
+import { createFraction, simplifyFraction } from "./fraction";
 
 export type Operator = Term<"operator">;
 
@@ -112,8 +112,7 @@ export const operators = {
                         let result: Expression;
 
                         outerCondition: if (!isOperation(termOfA) && !isOperation(termOfB)) {
-
-                            if(isExpressionNumber(termOfA) && isExpressionNumber(termOfB)) {
+                            if (isExpressionNumber(termOfA) && isExpressionNumber(termOfB)) {
                                 result = {
                                     type: "number",
                                     data: {
@@ -134,17 +133,24 @@ export const operators = {
                                 ? cloneExpression(termOfB)
                                 : createFraction(cloneExpression(termOfB), createTerm<Number>("1"));
 
-                            console.log("Multiplying fractions")
-                            console.log(fractionA)
-                            console.log(fractionB)
+                            console.log("Multiplying fractions");
+                            console.log(fractionA);
+                            console.log(fractionB);
 
-                            result = createFraction(
-                                operators.product.operation(fractionA.data.numerator, fractionB.data.numerator),
-                                operators.product.operation(fractionA.data.denominator, fractionB.data.denominator),
-                            )
+                            result = simplifyFraction(
+                                createFraction(
+                                    operators.product.operation(
+                                        fractionA.data.numerator,
+                                        fractionB.data.numerator
+                                    ),
+                                    operators.product.operation(
+                                        fractionA.data.denominator,
+                                        fractionB.data.denominator
+                                    )
+                                )
+                            );
 
                             console.log(result);
-
                         } else {
                             // operation is impossible
                             result = {
@@ -233,6 +239,13 @@ export const operators = {
             };
         },
     },
+    fraction: {
+        priority: 1,
+        symbol: "|",
+        operation: (a: Expression, b: Expression) => {
+            return createFraction(a, b);
+        },
+    },
 };
 
 export type OperatorData = {
@@ -249,7 +262,7 @@ export type OperatorName = keyof typeof operators;
  * @returns true or false based on the result
  */
 export function isOperator(term: string | Term, options?: { priority?: number }) {
-    const toBeChecked = term && typeof term === "object" ? stringifyTerm(term) : term || "";
+    const toBeChecked = term && typeof term === "object" ? stringifyTerm(term) : term;
     if (!toBeChecked || toBeChecked.length !== 1) return false;
 
     const name = getOperatorName(toBeChecked) as OperatorName;

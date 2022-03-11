@@ -60,13 +60,13 @@ export function mergeMultipliers(...multipliers: Multiplier[]) {
 }
 
 export function subtractMultipliers(a: Multiplier, b: Multiplier) {
-    const result = Object.assign({}, a);
+    const result = JSON.parse(JSON.stringify(a));
 
     Object.keys(b).forEach(key => {
         decrementFactor(result, key, b[key]);
     });
 
-    return optimizeMultiplier(result);
+    return result;
 }
 
 export function optimizeMultiplier(a: Multiplier) {
