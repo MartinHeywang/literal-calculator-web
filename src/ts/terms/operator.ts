@@ -230,6 +230,25 @@ export const operators = {
                 }
             }
 
+            condition: if(terms.b && isKnown(b)) {
+                const bTerm  = b as Number;
+                const bValue = bTerm.data.value;
+
+                // if the power is too high
+                // first, it's no use calculating it,
+                // second, the browser quickly reaches the recursion limit (73?),
+                if(bValue > 50) break condition;
+
+                let result = [];
+                for(let i = 0; i < bValue; i++) {
+                    result.push(cloneExpression(a));
+                    result.push(createTerm("*"));
+                }
+                result.pop(); // pops the last operator
+
+                return structure(result);
+            }
+
             return {
                 left: a,
                 operator: createTerm<Operator>("^"),
