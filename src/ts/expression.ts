@@ -1,6 +1,6 @@
 import { minify, list, arrange, transform } from "./format";
 import { isMultiplierEmpty } from "./multiplier";
-import { createFraction, Fraction } from "./terms/fraction";
+import { createFraction, Fraction, simplifyFraction } from "./terms/fraction";
 import { Number } from "./terms/number";
 import { Operator, stringifyOperator, getOperator, operators } from "./terms/operator";
 import { createTerm, stringifyTerm, Term } from "./terms/terms";
@@ -32,8 +32,6 @@ export type Operation = {
 export function createExpression(text: string) {
     const minified = minify(text);
 
-    console.log("create expression");
-
     if (!regexCheck(minified)) {
         throw new Error(
             `The expression '${text}' could not be parsed because it contains unsupported characters.`
@@ -49,7 +47,6 @@ export function createExpression(text: string) {
         throw new Error(`The expression '${text}' could not be parsed because of an order error.`);
     }
 
-    console.log(arranged);
     const transformed = transform(arranged);
 
     return transformed;
@@ -143,6 +140,8 @@ export function reduce(expression: Expression): Expression {
 
     console.groupCollapsed("%cReduction step", "color: limegreen; font-size: 1.2rem");
 
+    let lastResultStr = "";
+
     while (isReducible(result)) {
         const operation = result as Operation;
 
@@ -150,10 +149,21 @@ export function reduce(expression: Expression): Expression {
         console.log(stringifyOperator(operation.operator));
         const reducedRight = reduce(operation.right);
 
+        lastResultStr = stringifyExpression(result);
         result = getOperator(stringifyOperator(operation.operator))!.operation(
             reducedLeft,
             reducedRight
         );
+
+        // anti infinite recursion / loop system
+        // if no change has happened in the last reduction step
+        // then move over
+        if(lastResultStr === stringifyExpression(result)) break;
+    }
+
+    if (isFraction(result)) {
+        console.log(`Simplifying fraction : %c${stringifyExpression(result)}`, "color: hotpink");
+        result = simplifyFraction(result);
     }
 
     console.log("Result : %c" + stringifyExpression(result), "color: skyblue");
@@ -201,6 +211,15 @@ export function oppositeExpression(expression: Expression) {
  * @returns the inverse of the input expression
  */
 export function inverseExpression(expression: Expression) {
+    if (isFraction(expression)) {
+        // we can just swap the numerator and the denominator
+        return createFraction(
+            cloneExpression(expression.data.denominator),
+            /* over */
+            cloneExpression(expression.data.numerator)
+        );
+    }
+
     return createFraction(
         createTerm<Number>("1"),
         /* over */
@@ -237,7 +256,6 @@ export function isNumber(expression: Expression | Term): expression is Number {
  * @returns true if the expression is a fraction, false otherwise
  */
 export function isFraction(expression: Expression | Term): expression is Fraction {
-
     // @ts-ignore
     // property data may not exist on 'expression'
     // but in this case, the optional channelling operator prevents any undefined error.
@@ -272,7 +290,7 @@ export function isProduct(expression: Expression) {
 
 /**
  * Predicts whether the expression is potentially reducible.
- * 
+ *
  * @param expression the expression to check
  * @returns whether the expression is reducible or not
  */

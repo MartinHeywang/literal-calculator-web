@@ -8,7 +8,6 @@ import {
     stringifyExpression,
     createExpression,
     Operation,
-    inverseExpression,
     isFraction,
     cloneExpression,
 } from "../expression";
@@ -179,7 +178,7 @@ export const operators = {
         priority: 1,
         symbol: "/",
         operation: (a: Expression, b: Expression) => {
-            return operators.product.operation(a, inverseExpression(b));
+            return createFraction(cloneExpression(a), cloneExpression(b));
         },
     },
     power: {

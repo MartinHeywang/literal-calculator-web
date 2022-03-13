@@ -1,5 +1,5 @@
 import { Expression, isOperation, stringifyExpression } from "../expression";
-import { stringifyMultiplier, subtractMultipliers } from "../multiplier";
+import { optimizeMultiplier, stringifyMultiplier, subtractMultipliers } from "../multiplier";
 import { isNumber, Number } from "./number";
 import { createTerm, stringifyTerm, Term } from "./terms";
 
@@ -72,9 +72,24 @@ export function parseFraction(text: string) {
  * @returns the human-readable version of the fraction
  */
 export function stringifyFraction(fraction: Fraction): string {
-    return `${stringifyExpression(fraction.data.numerator)}|${stringifyExpression(
-        fraction.data.denominator
-    )}`;
+    
+
+    // in hand-written mathematics, there is no need to add parentheses 
+    // to the members of a fraction.
+    // but because here, fractions are written inline (e.g "1 | y"), 
+    // there is no other way than adding parentheses to known what 
+    // belongs to the fraction and what does not.
+
+    const addParenthesesOn = {
+        numerator: isOperation(fraction.data.numerator),
+        denominator: isOperation(fraction.data.denominator),
+    };
+
+    return `${addParenthesesOn.numerator ? "(" : ""}${stringifyExpression(fraction.data.numerator)}${
+        addParenthesesOn.numerator ? ")" : ""
+    }|${addParenthesesOn.denominator ? "(" : ""}${stringifyExpression(fraction.data.denominator)}${
+        addParenthesesOn.denominator ? ")" : ""
+    }`;
 }
 
 export function isFraction(term: string | Term): term is Fraction {
@@ -94,8 +109,11 @@ export function isFraction(term: string | Term): term is Fraction {
 }
 
 export function simplifyFraction(input: Fraction): Fraction | Number {
-    
     let { numerator, denominator } = input.data;
+    if (stringifyExpression(numerator) === stringifyExpression(denominator)) {
+        return createTerm("1");
+    }
+
     if (isOperation(numerator) || isOperation(denominator)) {
         return createFraction(numerator, denominator);
     }
@@ -104,42 +122,46 @@ export function simplifyFraction(input: Fraction): Fraction | Number {
     if (isFraction(numerator)) numerator = simplifyFraction(numerator);
     if (isFraction(denominator)) denominator = simplifyFraction(denominator);
 
-    if(!isNumber(numerator) || !isNumber(denominator)) {
+    if (!isNumber(numerator) || !isNumber(denominator)) {
         return createFraction(numerator, denominator);
     }
-    
+
     // at this point we are sure both the numerator and the denominator are numbers
     // and this is required in order to simplify fraction
 
     const resultMultiplier = subtractMultipliers(numerator.data.multiplier, denominator.data.multiplier);
+    const numeratorMultiplier = optimizeMultiplier(resultMultiplier); // remove < 0 values
+    const denominatorMultiplier = JSON.parse(JSON.stringify(resultMultiplier));
 
-    console.log("simplify fraction");
+    console.log("deno multi");
     console.log(resultMultiplier);
 
-    // if the multiplier contain negative values
-    if(Object.keys(resultMultiplier).some(key => {
-        const value = resultMultiplier[key];
-        return value < 0;
-    })) {
-        // then the division is impossible
-        // e.g can't simplify '1 | y'
-        return createFraction(numerator, denominator);
-    }
+    Object.keys(denominatorMultiplier).forEach(key => {
+        const value = denominatorMultiplier[key];
+
+        if (value >= 0) delete denominatorMultiplier[key];
+        if (value < 0) denominatorMultiplier[key] *= -1;
+    });
+
+    console.log(denominatorMultiplier);
 
     const isDivisible = (a: number, b: number) => a % b === 0;
 
-    if(isDivisible(numerator.data.value, denominator.data.value)) {
+    if (
+        isDivisible(numerator.data.value, denominator.data.value) &&
+        Object.keys(denominatorMultiplier).length === 0
+    ) {
         const numericalValue = numerator.data.value / denominator.data.value;
-        return createTerm(`${numericalValue}${stringifyMultiplier(resultMultiplier)}`)
+        return createTerm(`${numericalValue}${stringifyMultiplier(numeratorMultiplier)}`);
     }
 
     let divider = 1;
-    const resetDivider = () => divider = 1;
+    const resetDivider = () => (divider = 1);
 
     let newNumeratorValue = numerator.data.value;
     let newDenominatorValue = denominator.data.value;
 
-    while (divider <= newNumeratorValue && divider <= newDenominatorValue && divider < 100_000) {
+    while (divider <= newNumeratorValue && divider <= newDenominatorValue && divider <= 100_000) {
         divider++;
 
         if (isDivisible(newNumeratorValue, divider) && isDivisible(newDenominatorValue, divider)) {
@@ -154,8 +176,12 @@ export function simplifyFraction(input: Fraction): Fraction | Number {
         type: "fraction",
 
         data: {
-            numerator: createTerm<Number>(`${newNumeratorValue}${stringifyMultiplier(resultMultiplier)}`),
-            denominator: createTerm<Number>(`${newDenominatorValue}`),
+            numerator: createTerm<Number>(
+                `${newNumeratorValue}${stringifyMultiplier(numeratorMultiplier)}`
+            ),
+            denominator: createTerm<Number>(
+                `${newDenominatorValue}${stringifyMultiplier(denominatorMultiplier)}`
+            ),
         },
     };
 }

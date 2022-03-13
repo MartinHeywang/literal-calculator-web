@@ -30,12 +30,21 @@ export function minify(expression: string) {
  */
 export function list(expression: string) {
     const result: string[] = [];
+    const appendToResult = (str: string) => {
+        if (str) result.push(str);
+    };
 
     // for caching the current symbol
     let cache = "";
+    const appendToCache = (str: string) => {
+        if (str) cache += str;
+    };
 
-    const pushCache = () => {
-        if (cache !== "") result.push(cache);
+    const pushAndEmptyCache = () => {
+        if (cache !== "") {
+            result.push(cache);
+            cache = "";
+        }
     };
 
     for (let i = 0; i < expression.length; i++) {
@@ -47,34 +56,31 @@ export function list(expression: string) {
         // multiple cases are possible at this point
         // the char can be an operator, a digit/letter or a parenthesis
         if (isOperator(char) || isParenthesis(char)) {
-            if ((char === "+" || char === "-") && i === 0) {
-                cache += char;
+            if (i === 0 && (char === "+" || char === "-")) {
+                appendToCache(char);
                 continue;
             }
 
-            pushCache();
-            cache = "";
-            result.push(char);
+            pushAndEmptyCache();
+            appendToResult(char);
             continue;
         } else if (isLetter(char)) {
-            // special case, when a negative letter (e.g. "-x") is at the beginning of the string
+            // special case, when a signed letter (e.g. "-x") is at the beginning of the string
             if (i === 1 && (cache === "-" || cache === "+")) {
-                cache += char;
-                pushCache();
-                cache = "";
+                appendToCache(char);
+                pushAndEmptyCache();
                 continue;
             }
 
-            pushCache();
-            cache = "";
-            result.push(char);
+            appendToCache(char);
             continue;
         }
 
-        cache += char;
+        // if nothing could be done...
+        appendToCache(char);
     }
 
-    pushCache();
+    pushAndEmptyCache();
 
     return result;
 }
@@ -242,10 +248,12 @@ function deepen(list: Term[]) {
  * @param list the terms list to structure
  * @returns the new expression
  */
-export function structure(list: ExpressionList, options?: {
-    markAsImpossible?: boolean;
-}): Expression {
-
+export function structure(
+    list: ExpressionList,
+    options?: {
+        markAsImpossible?: boolean;
+    }
+): Expression {
     if (list.length === 1) {
         // lists with only one term are special
 
@@ -282,6 +290,6 @@ export function structure(list: ExpressionList, options?: {
         operator,
         right: structure(right, options),
 
-        impossible: options?.markAsImpossible || false
+        impossible: options?.markAsImpossible || false,
     };
 }

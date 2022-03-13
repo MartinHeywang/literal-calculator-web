@@ -70,13 +70,15 @@ export function subtractMultipliers(a: Multiplier, b: Multiplier) {
 }
 
 export function optimizeMultiplier(a: Multiplier) {
-    Object.keys(a).forEach(key => {
-        const value = a[key];
+    const copy = JSON.parse(JSON.stringify(a));
+
+    Object.keys(copy).forEach(key => {
+        const value = copy[key];
 
         if (value > 0) return;
 
-        delete a[key];
+        delete copy[key];
     });
 
-    return a;
+    return copy;
 }
