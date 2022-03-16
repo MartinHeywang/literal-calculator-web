@@ -18,23 +18,21 @@
 
         <script src="./src/ts/main.ts" defer type="module"></script>
 
-        <title>Vite App</title>
+        <title>Literal Calculation</title>
     </head>
     <body>
         <div class="container">
-            <h1 class="title">Variation Rate</h1>
+            <h1 class="title">Literal Calculation</h1>
 
             <div class="even-columns">
                 <div class="input">
                     <h2>Input</h2>
-                    <label>Define your function</label>
-                    <p class="function__def">f(x) = <span id="function-def" class="function__def-editable" contenteditable>2x</span></p>
-                    <label>Abscissa</label>
-                    <p class="function__def">a = <span id="a-def" class="function__def-editable" contenteditable>1</span></p>
-                    <button id="compute" class="compute">Compute!</button>
+                    <p>Enter a literal expression that will be reduced:</p>
+                    <p class="function__def"><span id="function-def" class="function__def-editable" contenteditable>2x</span></p>
+                    <button id="compute" class="compute">Reduce!</button>
                 </div>
                 <div class="result">
-                    <h2>Result</h2>
+                    <h2>Output</h2>
                     <div class="result__zone">
                         <p class="result__paragraph">Results will be displayed here.</p>
                     </div>
