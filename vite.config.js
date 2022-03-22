@@ -1,5 +1,3 @@
 export default {
-    build: {
-        outDir: "docs"
-    }
+    base: "/literal-calculator-web/"
 }
