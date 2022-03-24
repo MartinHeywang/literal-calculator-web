@@ -60,7 +60,7 @@ export function findOperator(list: ExpressionList, options?: { priority?: number
  * @returns the index of the first operator, or null if none were found.
  */
 export function findLastOperator(list: ExpressionList, options?: { priority?: number }) {
-    for (let i = list.length - 1; i >= 0; i--) {
+    for (let i = list.length - 1; i > 0; i--) {
         const term = list[i];
 
         if (Array.isArray(term)) continue;

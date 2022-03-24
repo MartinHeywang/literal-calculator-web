@@ -84,6 +84,7 @@ export const operators = {
                 .filter(o => o !== null);
 
             termsUnstructured.pop();
+            console.log(termsUnstructured);
 
             // @ts-expect-error
             // we're sure 'termsUnstructured' does not contain 'null' elements

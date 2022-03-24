@@ -1,5 +1,5 @@
 import { Expression, Operation } from "./expression";
-import { isNumber, isLetter, isDigit } from "./terms/number";
+import { isNumber, isLetter, isDigit, Number } from "./terms/number";
 import { isOperator, Operator } from "./terms/operator";
 import { isParenthesis } from "./terms/parenthesis";
 import { createTerm, stringifyTerm, Term } from "./terms/terms";
@@ -254,6 +254,9 @@ export function structure(
         markAsImpossible?: boolean;
     }
 ): Expression {
+
+    if(list.length === 0) return createTerm<Number>("0");
+
     if (list.length === 1) {
         // lists with only one term are special
 
