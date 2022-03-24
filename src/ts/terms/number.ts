@@ -77,7 +77,7 @@ export function extractValue(text: string) {
  * @param text the input text
  * @returns the new multiplier
  */
-export function extractMultiplier(text: string) {
+export function extractMultiplier(text: string): Multiplier | null {
     if (!isNumber(text)) return null;
 
     const multiplier = createMultiplierObject();

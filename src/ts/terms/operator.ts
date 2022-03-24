@@ -13,7 +13,7 @@ import {
 } from "../expression";
 import { incrementFactor, mergeMultipliers, stringifyMultiplier } from "../multiplier";
 import { createTerm, Term, stringifyTerm } from "./terms";
-import { Number, stringifyNumber } from "./number";
+import { extractMultiplier, Number } from "./number";
 import { structure } from "../format";
 import { createFraction, simplifyFraction } from "./fraction";
 
@@ -220,7 +220,7 @@ export const operators = {
                         // but, when parsing, letters and numbers are separated
                         // and, because powers are always calculated first
                         // this will never happen
-                        stringifyNumber(aTerm),
+                        stringifyMultiplier(extractMultiplier(stringifyTerm(aTerm))!),
 
                         bTerm.data.value - 1
                     );
