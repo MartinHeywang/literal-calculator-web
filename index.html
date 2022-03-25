@@ -13,7 +13,6 @@
         />
         <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
 
-
         <link rel="stylesheet" href="./src/scss/main.scss" />
 
         <script src="./src/ts/main.ts" defer type="module"></script>
@@ -28,13 +27,22 @@
                 <div class="input">
                     <h2>Input</h2>
                     <p>Enter a literal expression that will be reduced:</p>
-                    <p class="function__def"><span id="function-def" class="function__def-editable" contenteditable>2x</span></p>
+                    <p class="function__def">
+                        <span id="function-def" class="function__def-editable" contenteditable>2x</span>
+                    </p>
                     <button id="compute" class="compute">Reduce!</button>
                 </div>
                 <div class="result">
                     <h2>Output</h2>
                     <div class="result__zone">
                         <p class="result__paragraph">Results will be displayed here.</p>
+                        <a
+                            class="result__issue"
+                            href="https://github.com/martinheywang/literal-calculator-web/issues/new"
+                            rel="noopener noreferrer"
+                            target="blank"
+                            >seems wrong?</a
+                        >
                     </div>
                 </div>
             </div>

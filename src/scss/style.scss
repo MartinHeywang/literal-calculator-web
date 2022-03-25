@@ -77,6 +77,8 @@ button:focus-visible {
     border-color: var(--clr-primary-700);
 }
 
-.result__solutions {
-    font-weight: 1.2rem;
+.result__issue {
+    font-size: 0.8rem;
+    color: var(--clr-primary-700);
+    display: none;
 }
