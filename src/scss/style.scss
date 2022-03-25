@@ -77,8 +77,19 @@ button:focus-visible {
     border-color: var(--clr-primary-700);
 }
 
-.result__issue {
+.result__links {
+    display: flex;
+    align-items: center;
+    gap: .5em;
+}
+
+.result__links a {
     font-size: 0.8rem;
     color: var(--clr-primary-700);
-    display: none;
+    text-decoration: none;
+}
+
+.result__links a:hover {
+    text-decoration: underline;
+    cursor: pointer;
 }

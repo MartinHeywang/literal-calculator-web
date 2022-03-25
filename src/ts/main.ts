@@ -9,11 +9,13 @@ const e = {
     result: {
         p: document.querySelector<HTMLParagraphElement>(".result__paragraph")!,
         issue: document.querySelector<HTMLAnchorElement>(".result__issue")!,
+        copy: document.querySelector<HTMLAnchorElement>(".result__copy")!,
+        links: document.querySelector<HTMLDivElement>(".result__links")!
     },
     compute: document.querySelector<HTMLButtonElement>("#compute")!,
 };
 
-e.compute.addEventListener("click", () => {
+function action() {
     const textDef = e.def.function.textContent || "";
 
     const summaryStr = (str: string, length = 35) =>
@@ -21,12 +23,12 @@ e.compute.addEventListener("click", () => {
 
     try {
         const def = createExpression(textDef);
-        
+
         console.groupCollapsed("%cParsed", "color: orange; font-size: 1.2rem");
         console.log(def);
         console.log(stringifyExpression(def));
         console.groupEnd();
-        
+
         const reduced = reduce(def);
 
         console.group("%cReduced", "color: yellow; font-size: 1.2rem");
@@ -56,5 +58,22 @@ e.compute.addEventListener("click", () => {
         console.log(err);
     }
 
-    e.result.issue.style.display = "unset";
-});
+    e.result.links.style.display = "flex";
+}
+
+e.compute.addEventListener("click", action);
+
+const params = new URLSearchParams(location.search);
+const expression = decodeURIComponent(params.get("expression") || "");
+
+if(expression) {
+    e.def.function.textContent = expression;
+    action();
+}
+
+e.result.copy.addEventListener("click", copyURL)
+
+function copyURL() {
+    const url = `${location.origin}${location.pathname}?expression=${encodeURIComponent(e.def.function.textContent || "")}`
+    navigator.clipboard.writeText(url)
+}
