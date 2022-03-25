@@ -21,12 +21,13 @@ e.compute.addEventListener("click", () => {
 
     try {
         const def = createExpression(textDef);
-        const reduced = reduce(def);
-
+        
         console.groupCollapsed("%cParsed", "color: orange; font-size: 1.2rem");
         console.log(def);
         console.log(stringifyExpression(def));
         console.groupEnd();
+        
+        const reduced = reduce(def);
 
         console.group("%cReduced", "color: yellow; font-size: 1.2rem");
         console.log(reduced);

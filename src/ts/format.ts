@@ -109,12 +109,20 @@ function addImplicitMultiplications(list: string[]) {
         const current = list[i];
 
         // where to add multiplications
-        // - when the previous symbol is NOT an operator, and the current symbol an opening parenthesis
-        // - when the previous symbol is a digit, and the current symbol a letter
-        // - when both the previous and the current symbol are letters
+        // - when the previous symbol is neither an operator nor an opening parenthesis, and the current symbol an opening parenthesis e.g "(a+b) * (a-b)", but NOT for "((2+1))"
+        // - when the previous symbol is a digit, and the current symbol a letter e.g "5 * x"
+        // - when both the previous and the current symbol are letters e.g "x * y"
         if (
-            (previous && !isOperator(previous) && isParenthesis(current, { includeClosings: false })) ||
+            // either
+            (previous &&
+                !isOperator(previous) &&
+                !isParenthesis(current, { includeClosings: false }) &&
+                isParenthesis(current, { includeClosings: false })) ||
+
+            // or
             (isDigit(previous) && isLetter(current)) ||
+
+            // or
             (isLetter(previous) && isLetter(current))
         ) {
             // inserting between the previous and the current symbol
@@ -254,8 +262,7 @@ export function structure(
         markAsImpossible?: boolean;
     }
 ): Expression {
-
-    if(list.length === 0) return createTerm<Number>("0");
+    if (list.length === 0) return createTerm<Number>("0");
 
     if (list.length === 1) {
         // lists with only one term are special

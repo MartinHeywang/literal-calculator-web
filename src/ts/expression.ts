@@ -31,6 +31,7 @@ export type Operation = {
  */
 export function createExpression(text: string) {
     const minified = minify(text);
+    console.log(minified);
 
     if (!regexCheck(minified)) {
         throw new Error(
@@ -39,6 +40,7 @@ export function createExpression(text: string) {
     }
 
     const listed = list(minified);
+    console.log(listed);
     const arranged = arrange(listed);
     if (!parenthesesCheck(arranged)) {
         throw new Error(`The expression '${text}' could not be parsed because of a parentheses error.`);
@@ -46,6 +48,7 @@ export function createExpression(text: string) {
     if (!orderCheck(arranged)) {
         throw new Error(`The expression '${text}' could not be parsed because of an order error.`);
     }
+    console.log(arranged)
 
     const transformed = transform(arranged);
 
@@ -98,6 +101,7 @@ export function isKnown(expression: Expression): boolean {
  * @returns the human-readable string for the expression
  */
 export function stringifyExpression(expression: Expression) {
+    console.log(JSON.stringify(expression, null, 4))
     if (!isOperation(expression)) return stringifyTerm(expression);
 
     const areOperations = {
