@@ -10,6 +10,7 @@ const e = {
         p: document.querySelector<HTMLParagraphElement>(".result__paragraph")!,
         issue: document.querySelector<HTMLAnchorElement>(".result__issue")!,
         copy: document.querySelector<HTMLAnchorElement>(".result__copy")!,
+        copyAnswer: document.querySelector<HTMLAnchorElement>(".result__copy-answer")!,
         links: document.querySelector<HTMLDivElement>(".result__links")!
     },
     compute: document.querySelector<HTMLButtonElement>("#compute")!,
@@ -45,6 +46,10 @@ function action() {
         e.result.issue.href = `https://github.com/martinheywang/literal-calculator-web/issues/new?title=${encodeURIComponent(
             issueTitle
         )}&body=${encodeURIComponent(issueBody)}`;
+
+        e.result.copyAnswer.style.display = "unset";
+        e.result.copyAnswer.onclick = () => navigator.clipboard.writeText(stringifyExpression(reduced));
+
     } catch (err: any) {
         const message: string = err.message;
         const issueTitle = `Error when reducing: '${summaryStr(textDef)}'`;
@@ -54,6 +59,7 @@ function action() {
         e.result.issue.href = `https://github.com/martinheywang/literal-calculator-web/issues/new?title=${encodeURIComponent(
             issueTitle
         )}&body=${encodeURIComponent(issueBody)}`;
+        e.result.copyAnswer.style.display = "none";
 
         console.log(err);
     }

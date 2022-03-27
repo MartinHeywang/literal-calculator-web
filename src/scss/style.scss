@@ -78,18 +78,29 @@ button:focus-visible {
 }
 
 .result__links {
-    display: flex;
+    display: none;
     align-items: center;
-    gap: .5em;
+
 }
 
 .result__links a {
     font-size: 0.8rem;
     color: var(--clr-primary-700);
     text-decoration: none;
+    display: inline-block;
+    padding: .2em 1em; 
+    transform: translateX(-1em);
 }
 
 .result__links a:hover {
     text-decoration: underline;
     cursor: pointer;
+}
+
+.result__links > * + * {
+    border-left: 1px solid var(--clr-neutral-900);
+}
+
+.result__copy-answer {
+    display: none;
 }
