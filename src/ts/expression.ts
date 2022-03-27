@@ -34,19 +34,20 @@ export function createExpression(text: string) {
     console.log(minified);
 
     if (!regexCheck(minified)) {
-        throw new Error(
-            `The expression '${text}' could not be parsed because it contains unsupported characters.`
-        );
+        console.error(`The expression '${text}' could not be parsed because it contains unsupported characters.`)
+        throw new Error("Unsupported characters.");
     }
 
     const listed = list(minified);
     console.log(listed);
     const arranged = arrange(listed);
     if (!parenthesesCheck(arranged)) {
-        throw new Error(`The expression '${text}' could not be parsed because of a parentheses error.`);
+        console.error(`The expression '${text}' could not be parsed because of a parentheses error.`);
+        throw new Error(`Parentheses error.`);
     }
     if (!orderCheck(arranged)) {
-        throw new Error(`The expression '${text}' could not be parsed because of an order error.`);
+        console.error(`The expression '${text}' could not be parsed because of an order error.`);
+        throw new Error("Ordering error.");
     }
     console.log(arranged)
 

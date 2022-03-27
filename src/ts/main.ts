@@ -55,11 +55,11 @@ function action() {
         const issueTitle = `Error when reducing: '${summaryStr(textDef)}'`;
         const issueBody = `${issueTitle}\n\nInput: '${textDef}'\nMessage: "${message}"`;
 
-        e.result.p.textContent = `An error occurred. "${message}"`;
+        e.result.p.textContent = `Error: "${message}"`;
         e.result.issue.href = `https://github.com/martinheywang/literal-calculator-web/issues/new?title=${encodeURIComponent(
             issueTitle
         )}&body=${encodeURIComponent(issueBody)}`;
-        e.result.copyAnswer.style.display = "none";
+        e.result.copyAnswer.style.display = "";
 
         console.log(err);
     }
