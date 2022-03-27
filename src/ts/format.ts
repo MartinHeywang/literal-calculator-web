@@ -116,7 +116,7 @@ function addImplicitMultiplications(list: string[]) {
             // either
             (previous &&
                 !isOperator(previous) &&
-                !isParenthesis(current, { includeClosings: false }) &&
+                !isParenthesis(previous, { includeClosings: false }) &&
                 isParenthesis(current, { includeClosings: false })) ||
 
             // or
