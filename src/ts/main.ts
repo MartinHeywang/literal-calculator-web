@@ -59,7 +59,7 @@ function action() {
         e.result.issue.href = `https://github.com/martinheywang/literal-calculator-web/issues/new?title=${encodeURIComponent(
             issueTitle
         )}&body=${encodeURIComponent(issueBody)}`;
-        e.result.copyAnswer.style.display = "";
+        e.result.copyAnswer.style.display = "none";
 
         console.log(err);
     }
