@@ -281,10 +281,13 @@ export type OperatorName = keyof typeof operators;
  * @returns true or false based on the result
  */
 export function isOperator(term: string | Term, options?: { priority?: number }) {
-    const toBeChecked = term && typeof term === "object" ? stringifyTerm(term) : term;
-    if (!toBeChecked || toBeChecked.length !== 1) return false;
+    if(typeof term === "object") {
+        return term.type === "operator";
+    }
 
-    const name = getOperatorName(toBeChecked) as OperatorName;
+    if (!term || term.length !== 1) return false;
+
+    const name = getOperatorName(term) as OperatorName;
     if (name === null) return false; // not found
 
     // no priority specified, or matches

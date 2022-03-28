@@ -115,7 +115,6 @@ export function stringifyNumber(term: Number) {
 
     let digits = term.data.value.toString();
     if(digits === "1") digits = "";
-    if(digits === "-1") digits = "-";
 
     const multiplier = stringifyMultiplier(term.data.multiplier);
     

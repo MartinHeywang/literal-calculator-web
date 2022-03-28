@@ -102,7 +102,6 @@ export function isKnown(expression: Expression): boolean {
  * @returns the human-readable string for the expression
  */
 export function stringifyExpression(expression: Expression) {
-    console.log(JSON.stringify(expression, null, 4))
     if (!isOperation(expression)) return stringifyTerm(expression);
 
     const areOperations = {

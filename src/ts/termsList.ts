@@ -66,7 +66,7 @@ export function findLastOperator(list: ExpressionList, options?: { priority?: nu
         if (Array.isArray(term)) continue;
         if (isOperation(term)) continue;
 
-        if (isOperator(stringifyTerm(term), { priority: options?.priority })) return i;
+        if (isOperator(term, { priority: options?.priority })) return i;
     }
 
     return null;

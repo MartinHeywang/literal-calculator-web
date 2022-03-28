@@ -118,10 +118,8 @@ function addImplicitMultiplications(list: string[]) {
                 !isOperator(previous) &&
                 !isParenthesis(previous, { includeClosings: false }) &&
                 isParenthesis(current, { includeClosings: false })) ||
-
             // or
             (isDigit(previous) && isLetter(current)) ||
-
             // or
             (isLetter(previous) && isLetter(current))
         ) {
