@@ -96,7 +96,7 @@ export function arrange(list: string[]) {
     let result = list;
     result = removeEmptyParentheses(result);
     result = addImplicitMultiplications(result);
-    result = treatNegativeParentheses(result);
+    result = treatSignedNumbers(result);
 
     return result;
 }
@@ -151,22 +151,31 @@ function removeEmptyParentheses(list: string[]) {
     return result;
 }
 
-function treatNegativeParentheses(list: string[]) {
-    const result = Array.from(list);
-    if (list.length < 2) return result;
+function treatSignedNumbers(list: string[]) {
+    const result: string[] = [];
 
-    condition: if (isOperator(result[0], { priority: 0 })) {
-        // we can't add a minus sign on a parenthesis, so we prefer to insert a "0" at the beginning
-        if (isParenthesis(result[1])) {
-            result.unshift("0");
-            break condition;
-        }
+    for (let i = 0; i < list.length; i++) {
+        const symbol = list[i];
 
-        // on a number, we do! We're just adding this minus sign to the symbol
-        if (isNumber(result[1])) {
-            result[1] = `${result[0]}${result[1]}`;
-            result.splice(0, 1);
-            break condition;
+        if (
+            // if the symbol is an operator of priority 0, that's to say a sign
+            isOperator(symbol, { priority: 0 }) &&
+            
+            // and if the last symbol is not a number
+            (list[i - 1] ? !isNumber(list[i - 1]) : true)
+        ) {
+            // adding zero so "-5" becomes "0-5", for example.
+            // and wrap the whole operation in between parentheses
+            // in order to preserve the priority order.
+            result.push("(");
+            result.push("0");
+            result.push(symbol);
+            result.push(list[i + 1]);
+            result.push(")");
+            // skip the next iteration : the following number has already been added
+            i++;
+        } else {
+            result.push(symbol);
         }
     }
 
